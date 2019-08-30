@@ -1,5 +1,10 @@
-
+const routerBase = process.env.DEPLOY_ENV === 'GH_PAGES' ? {
+  router: {
+    base: '/vue-car-racing/'
+  }
+} : {}
 export default {
+  ...routerBase,
   mode: 'spa',
   /*
   ** Headers of the page
