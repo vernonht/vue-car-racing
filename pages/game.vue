@@ -7,7 +7,7 @@
                 <button class="border hover:bg-grey-200 rounded w-10"type="button" name="button" @click="currentSpeed--">-</button>
             </div>
         </div>
-        <canvas id="canvas" width="320" height="480" tabindex="0"></canvas>
+        <canvas id="canvas" :width="data.canvas.width" :height="data.canvas.height" tabindex="0"></canvas>
         <pre id="score">0</pre>
         <div class="flex flex-col px-10" id="instruction">
             <div>Press "Enter" key to start the game.</div>
@@ -46,7 +46,7 @@ export default {
                 fps: 180,
                 speed: 10,
                 canvas: {
-                    width: 320,
+                    width: 420,
                     height: 480
                 },
                 car1: {
@@ -54,8 +54,9 @@ export default {
                     height: 120,
                     turn: 25,
                     image: this.base64ToImg("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAFAAAAB4CAYAAAES6UVgAAAABGdBTUEAALGPC/xhBQAAAAZiS0dEAP8A/wD/oL2nkwAAAAlwSFlzAAALEwAACxMBAJqcGAAAAAd0SU1FB+ALAQYyDYKwsygAAAAdaVRYdENvbW1lbnQAAAAAAENyZWF0ZWQgd2l0aCBHSU1QZC5lBwAABM1JREFUeNrtnLGL3EYUxn9S1sRFFpbksFFsSGmz/4APN07cHITDJLg4cOMiKQzmCsMdJEVc+B9w4+JgO4PBENyk2TJujMFdXIYUd02OYFKEDbi44EkhaU+rk1Yj7Wg1e/d98Ni7lTTz7TdvZp7ejAQncRU4AvrZL4PM34ZyBGF6kik5LfneBBalAdAD/gKIoqj0pMPDQ8Ioii5ggRBL9LLFOynR/YmBjYYzP6ZSxzpVY1t9Hi+BUVmJ80oNpvIYU151eqyePPOkSeUJoigy7t2sysWiKFodN7PR0X3VZXiQFFBl/Xnu2DOGI4AgsK85HQSDIC5roR5TgB8DYB14baN6VYukDvEahwijKFqIWb4T9IpoL8QQxziDBc70UVd+6Bx/Wg4EVmYbEtWdTediB/gH+APYbFqiacooLCiozk83yWh1Ent7GGMwe3v2DWBMbMD4RE3DYXxwOGxUoAEutzFiB6HDwgCG067notutyPDlaj6pHVh19pOtb0U0SanAlY0cnPaUMzQeet8oIXDDYXk3nM/LTS76Apg0jB932ghwb7oMcAusWduncVUmtnJuGxvHddy+ze/WIem7d8cXGhP/3wbBbB0ZIR6WEdvKXnz9Oub9+/izzSYejWKravrvW/azxv5ZOCy4jBabTiIJ/gspSHt6hF6YNK+3CPEcvay/uQrXXd3prIaClr1JPiiCIiiCItgRnN8nLmUm8SgelA+qk3ih4JrvCs7ctPvGzXsfXBR94vXGEfHa4xHxOuRL4kzW1S5I7TTMEkyIU3etKeUypfHAJbk2cy83FyG2zhKTRLXw+DH7ac5ue7s9YrncoPWIMi5JLDq13d3ZOnZ3MWXRVRYPKc98OrWDg9k6Dg6qm/sy81OzTm0wmK1jMKj2yZkCxuPY2uwcly5hJpP4M3dsK0/uBzxM/y5rrGtq08Tq0FOC0yT6Ub57e3TTFIQ2Y0+HWPc9HvzOd4K3fCd4QffFC+dm0iHFxzUSpT5E0NsEppbCRFAERVAERVAERVAERVAELbESy7Grd0+iTRXqxSIogppJpODpamI8bubp+5YCz4h9nXJy/ZoE1y17+vdu1cVF4BvgKe7Xlp8mZV88DUKdB74F9ul+0X4/4XLeZ8E+Bu7j786HvN1POHeKAfB8hUQrs+fJb1kO7t3j5/E4fmp2PG7/yVla3pY1GsVbs0YjzJUr/NKWbufW13mb3xCXtTov1Ona8pvu8ra2xm/AOVfxxDMKHijPW1sPmLOEbZV5y2yzfFYVhM6LszaBD8AdgBcv5itdddwnPHliffxOosFmXa97U9Ry29vFLdbmFmaW8G6HrG1slF7zpsgb8198QvwsgFCOPvBvURfuSzwrTMi8WDTIfH6QNrVzRSZdenhUdXZXyxFdwWJL2CPgpwD4FPhbAtYWEOCzkIKHIQRrbIXAXenQGHdD4Jp0aIxryvg6mIoFCdgdekXhiU/b4n1CkVbyQHVhCSgBz/Qk4vjeUB4oSEAJKAEloCABJaAElICCBJSAElACChJQAkrAUwvvH4iUB0pAYR6s10S0P1AeqC4sASWgIAEloO5E5IHCMT5KvPBLSdG8C5MI+KvkqI2v8l98Drxi9V8k0aa9SnSa8cA8NLHM77GaRDQLe4L/AQwSmpBDGIdrAAAAAElFTkSuQmCC"),
+image: this.base64ToImg('/socargame-06.png'),
                     position: {
-                        x: 120,
+                        x: 130,
                         y: 340
                     }
                 },
@@ -63,17 +64,37 @@ export default {
                     width: 80,
                     height: 120,
                     distance: 350,
-                    image: this.base64ToImg("data:image/png;base64,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")
+                    image: this.base64ToImg('/socargame-03.png')
+                },
+                car3: {
+                    width: 80,
+                    height: 120,
+                    distance: 350,
+                    image: this.base64ToImg('/socargame-04.png')
+                },
+                car4: {
+                    width: 80,
+                    height: 120,
+                    distance: 350,
+                    image: this.base64ToImg('/socargame-05.png')
+                },
+                car5: {
+                    width: 80,
+                    height: 120,
+                    distance: 350,
+                    image: this.base64ToImg('/socargame-07.png')
                 },
                 line: {
                     width: 10,
                     height: 80,
                     distance: 120,
-                    pos1: 105,
-                    pos2: 205,
+                    pos0: 15,
+                    pos1: 115,
+                    pos2: 215,
+                    pos3: 315,
                     color: "#efefef"
                 },
-                moves: [20, 120, 220],
+                moves: [30, 130, 230, 330],
                 score: 1,
                 grace: 10
             },
@@ -130,6 +151,10 @@ export default {
               this.car1Move = this.data.moves[1];
               this.car1Turn = 1;
             }
+            else if (this.car1[0] === this.data.moves[3]) {
+              this.car1Move = this.data.moves[2];
+              this.car1Turn = 1;
+            }
         },
         right() {
             if (this.car1[0] === this.data.moves[0]) {
@@ -138,6 +163,10 @@ export default {
             }
             else if (this.car1[0] === this.data.moves[1]) {
               this.car1Move = this.data.moves[2];
+              this.car1Turn = 2;
+            }
+            else if (this.car1[0] === this.data.moves[2]) {
+              this.car1Move = this.data.moves[3];
               this.car1Turn = 2;
             }
         },
@@ -161,8 +190,10 @@ export default {
 
             while (y >= 0) {
                 this.lines.push([
+                    [this.data.line.pos0, y, this.data.line.width, this.data.line.height],
                     [this.data.line.pos1, y, this.data.line.width, this.data.line.height],
-                    [this.data.line.pos2, y, this.data.line.width, this.data.line.height]
+                    [this.data.line.pos2, y, this.data.line.width, this.data.line.height],
+                    [this.data.line.pos3, y, this.data.line.width, this.data.line.height]
                 ]);
 
                 y -= this.data.line.distance;
@@ -173,18 +204,21 @@ export default {
         },
         initCar2() {
             for (var i = 0; i < Math.floor(Math.random() * 2) + 1; i++) {
-                var random = this.data.moves[Math.floor(Math.random() * 3)];
+                var random = this.data.moves[Math.floor(Math.random() * 4)];
 
+                let min = Math.ceil(2);
+                let max = Math.floor(5);
+                let rand = Math.floor(Math.random() * (max - min + 1)) + min;
                 if (this.car2.length > 0) {
                     if (random === this.car2[this.car2.length - 1][1]) {
                         i--;
                     }
                     else {
-                        this.car2.push([random, this.data.car2.height * -1]);
+                        this.car2.push([random, this.data.car2.height * -1, this.data[`car${rand}`].image]);
                     }
                 }
                 else {
-                    this.car2.push([random, this.data.car2.height * -1]);
+                    this.car2.push([random, this.data.car2.height * -1, this.data[`car${rand}`].image]);
                 }
             }
         },
@@ -196,6 +230,8 @@ export default {
             for (var i = 0; i < this.lines.length; i++) {
                 this.context.fillRect(this.lines[i][0][0], this.lines[i][0][1], this.lines[i][0][2], this.lines[i][0][3]);
                 this.context.fillRect(this.lines[i][1][0], this.lines[i][1][1], this.lines[i][1][2], this.lines[i][1][3]);
+                this.context.fillRect(this.lines[i][2][0], this.lines[i][2][1], this.lines[i][2][2], this.lines[i][2][3]);
+                this.context.fillRect(this.lines[i][3][0], this.lines[i][3][1], this.lines[i][3][2], this.lines[i][3][3]);
 
                 if (this.lines[i][0][1] > this.data.canvas.height) {
                     remove = i;
@@ -203,13 +239,17 @@ export default {
                 else {
                     this.lines[i][0][1] += this.currentSpeed;
                     this.lines[i][1][1] += this.currentSpeed;
+                    this.lines[i][2][1] += this.currentSpeed;
+                    this.lines[i][3][1] += this.currentSpeed;
                 }
             }
 
             if (this.lines[this.lines.length - 1][0][1] > this.data.line.distance - this.data.line.height) {
                 this.lines.push([
+                    [this.data.line.pos0, (this.data.line.height * -1), this.data.line.width, this.data.line.height],
                     [this.data.line.pos1, (this.data.line.height * -1), this.data.line.width, this.data.line.height],
-                    [this.data.line.pos2, (this.data.line.height * -1), this.data.line.width, this.data.line.height]
+                    [this.data.line.pos2, (this.data.line.height * -1), this.data.line.width, this.data.line.height],
+                    [this.data.line.pos3, (this.data.line.height * -1), this.data.line.width, this.data.line.height]
                 ]);
             }
 
@@ -244,7 +284,9 @@ export default {
         },
         drawCar2() {
             var remove = false;
-
+            let min = Math.ceil(2);
+            let max = Math.floor(5);
+            let rand = Math.floor(Math.random() * (max - min + 1)) + min;
             for (var i = 0; i < this.car2.length; i++) {
                 if (this.car2[i][1] > this.data.canvas.height) {
                     remove = i;
@@ -252,7 +294,7 @@ export default {
                 else {
                     this.car2[i][1] += this.currentSpeed;
                 }
-                this.context.drawImage(this.data.car2.image, this.car2[i][0], this.car2[i][1], this.data.car2.width, this.data.car2.height);
+                this.context.drawImage(this.car2[i][2], this.car2[i][0], this.car2[i][1], this.data.car2.width, this.data.car2.height);
             }
 
             if (this.car2[this.car2.length - 1][1] > this.data.car2.distance) {
@@ -319,14 +361,15 @@ export default {
 <style media="screen" scoped>
 
 .box {
-    width: 320px;
+    width: 340px;
 position: absolute;
 top: calc(50% - 240px);
-left: calc(50% - 160px);
+left: calc(50% - 170px);
 }
 
 #canvas {
 background: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAUAAAAHgCAIAAAEs6ROFAAAABGdBTUEAALGPC/xhBQAAAAZiS0dEAP8A/wD/oL2nkwAAAAlwSFlzAAALEwAACxMBAJqcGAAAAAd0SU1FB+ALAQoxK3KKnHIAAAAdaVRYdENvbW1lbnQAAAAAAENyZWF0ZWQgd2l0aCBHSU1QZC5lBwAABdZJREFUeNrt3UGK8zoQhVEpi7D2v7zSJioDh+BAJg5ERtY5w8cDUfn6Nj80TdfMUkppbSsDRfRHuYiHPexhD3vYwx72sIc97GEPe9jDHvawhz3sYQ972MMe9rCHPezhX9TxP1uM6Bp72MMe9rCHPexhD3vYwx72sIc97GEPe9jDHvawhz3sYQ972MOzPfz62eJu8G8vjrT/QPPKT3q5Ly0HO9jBDnawgx3sYAc72MEOdrCDHexgBzvYwQ52sIMd7GAHO9jBDnawgx3sYAc72MEOdrCDHexgBzvYwQ52sIMd7GAHO9jBDnbwpJb43cP3Lx76knawgx3sYAc72MEOdrCDHexgBzvYwQ52sIMd7GAHO9jBDnawgx3sYAc72MEOdrCDHexgBzvYwQ52sIMd7GAHO9jBDnawgx3sYAc72MEOdrCDHexgBzvYwQ52sIMd7GAHO9jBDnawgx3sYAc72MEOdrCDHexgBzvYwQ52sIMd7GAHO9jBDnawgx3sYAc72MEOdrCDHexgBzv4jI+/e3h017+BeGPHP++47le0b1kIjMAIjMAIjMACIzACIzACIzACI7DACIzACIzACIzAAiMwAiMwAiMwAgvsIxAYgREYgREYgRFYYARGYARGYARGYIERGIERGIERGIERWGAERmAERmAERmCBERiBERiBERiBBUZgBEZgBEZgBEZggREYgREYgREYgQVGYARGYARGYAQWGIERGIERGIERGIEFRmAERmAERmAEFhiBERiBERiBERiBBUZgBEZgBEZgBF5LzfzyX1vbfDRziegW7Fs0AiMwAiMwAiOwwD4CgREYgREYgREYgQVGYARGYARGYAQWGIERGIERGIERGIEFRmAERmAERmAEFhiBERiBERiBEVhgBEZgBEZgBEZgBBYYgREYgREYgRFYYARGYARGYARGYIERGIERGIERGIERWGAERmAERmAERmCBERiBERiBERiBEVhgBEZgBEZgBEZggREYgREYgREYgQVGYARGYARGYARGYIERGIERGIERGIEFRmAERmAERmAEFhiBERiBERiBERiBBUZgBEZgBEZgBBYYgREYgREYgREYgQVGYARGYARGYAQWGIERGIERGIERWGAERmAERmAERmAEFhiBERiBERiBEVhgBEZgBEZgBEZggREYgREYgREYgRFYYARGYARGYARGYIERGIERGIERGIERWGAERmAERmAERmCBERiBERiBERiBBUZgBEZgBEZgBEZggREYgREYgREYgQVGYOZRM0/8361tPjL4q4juOzT4JxZgwIABAwYMBgwYMGDAYMCAAQMGDBgwGDBgwIABAwYMBgwYMGDAYMCAAQMGDBgwGDBgwIABAwYMBgwYMGDAYMCAAQMGDBgwGDBgwIABgwEDBgwYMGDAYMCAAQMGDBgwGDBgwIABgwEDBgwYMGDAYMCAAQMGDBgwGDBgwIABgwEDBgwYMGDAYMCAAQMGDBgwGDBgwIABgwEDBgwYMGDAYMCAAQMGDAYMGDBgwIABgwEDBgwYMGDAYMCAAQMGDAYMGDBgwIABgwEDBgwYMGDAYMCAAQMGDAYMGDBgwIABgwEDBgwYMBgwYMCAAQMGDAYMGDBgwIABgwEDBgwYMBgwYMCAAQMGDAYMGDBgwIABgwEDBgwYMBgwYMCAAQMGDAYMGDBgwIABgwEDBgwYMBgwYMCAAQMGDAYMGDBgwGDAgAEDBgwYMBgwYMCAAQMGDAYMGDBgwGDAgAEDBgwYMBgwYMCAAQMGDAYMGDBgwGDAgAEDBgwYMBgwYMCAAQMGDAYMGDBgwGDAgAEDBgwYMBgwYMCAAYMBAwYMGDBgwGDAgAEDBgwYMBgwYMCAAYMBAwYMGDBgwGDAgAEDBgwYMBgwYMCAAYMBAwYMGDBgwGDAgAEDBgwG7CMAAwYMGDBgMGDAgAEDBgwYDBgwYMCAwYABAwYMGDBgMGDAgAEDBgwYDBgwYMCAwYABAwaGeALhgyn0oJdhpwAAAABJRU5ErkJggg==");
+background: url('/socargame-01.png');
 margin: 0 auto;
 outline: none;
 }
