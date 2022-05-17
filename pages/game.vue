@@ -7,6 +7,12 @@
                 <button class="border hover:bg-grey-200 rounded w-10"type="button" name="button" @click="currentSpeed--">-</button>
             </div>
         </div>
+        <div class="hidden">
+            <audio controls autoplay loop id="audio">
+                <source src="Guitar-Mayhem-5.mp3" type="audio/mpeg">
+                Your browser does not support the audio element.
+            </audio>
+        </div>
         <canvas id="canvas" :width="data.canvas.width" :height="data.canvas.height" tabindex="0"></canvas>
         <pre id="score">0</pre>
         <div class="flex flex-col px-10" id="instruction">
@@ -64,25 +70,25 @@ image: this.base64ToImg('/socargame-06.png'),
                     width: 80,
                     height: 120,
                     distance: 350,
-                    image: this.base64ToImg('/socargame-03.png')
+                    image: this.base64ToImg('./socargame-03.png')
                 },
                 car3: {
                     width: 80,
                     height: 120,
                     distance: 350,
-                    image: this.base64ToImg('/socargame-04.png')
+                    image: this.base64ToImg('./socargame-04.png')
                 },
                 car4: {
                     width: 80,
                     height: 120,
                     distance: 350,
-                    image: this.base64ToImg('/socargame-05.png')
+                    image: this.base64ToImg('./socargame-05.png')
                 },
                 car5: {
                     width: 80,
                     height: 120,
                     distance: 350,
-                    image: this.base64ToImg('/socargame-07.png')
+                    image: this.base64ToImg('./socargame-07.png')
                 },
                 line: {
                     width: 10,
@@ -100,6 +106,7 @@ image: this.base64ToImg('/socargame-06.png'),
             },
             currentSpeed: 10,
             game: false,
+            muted: false,
             die: false,
             car1Move: 0,
             car1Turn: 0,
@@ -114,7 +121,18 @@ image: this.base64ToImg('/socargame-06.png'),
             lose: '',
         }
     },
+    watch: {
+        muted: function (val) {
+            $('#audio').prop("muted", val);
+            const audio = document.getElementById('audio');
+            if (val) {
+                audio.pause(); audio.currentTime = 0;
+            }
+            else audio.play();
+        },
+    },
     mounted() {
+        this.muted = true;
         this.canvas =  document.querySelector("#canvas");
         this.context =  canvas.getContext("2d");
         this.instruction =  document.querySelector("#instruction");
@@ -171,6 +189,7 @@ image: this.base64ToImg('/socargame-06.png'),
             }
         },
         start() {
+            this.muted = false
             this.game = true;
             this.instruction.style.display = "none";
             this.lose.style.display = "none";
@@ -317,6 +336,7 @@ image: this.base64ToImg('/socargame-06.png'),
                     this.game = false;
                     this.instruction.style.display = "block";
                     this.lose.style.display = "block";
+                    this.muted = true
                 }
             }
         },
@@ -361,7 +381,7 @@ image: this.base64ToImg('/socargame-06.png'),
 <style media="screen" scoped>
 
 .box {
-    width: 340px;
+    width: 420px;
 position: absolute;
 top: calc(50% - 240px);
 left: calc(50% - 170px);

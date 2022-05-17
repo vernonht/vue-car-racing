@@ -22,6 +22,9 @@ export default {
     ],
     link: [
       { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' }
+    ],
+    script: [
+      {src: "https://code.jquery.com/jquery-3.6.0.slim.min.js", integrity: "sha256-u7e5khyithlIdTpu22PHhENmPcRdFiHRjhAuHcs05RI=", crossorigin: "anonymous"}
     ]
   },
   /*
