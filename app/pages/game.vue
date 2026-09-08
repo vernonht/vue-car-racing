@@ -42,7 +42,8 @@
     </div>
 </template>
 
-<script>
+<script setup>
+import { reactive, ref, watch, onMounted, onBeforeUnmount } from 'vue'
 import socargame03 from '@/assets/socargame-03.png'
 import socargame04 from '@/assets/socargame-04.png'
 import socargame05 from '@/assets/socargame-05.png'
@@ -53,7 +54,7 @@ import socargame07 from '@/assets/socargame-07.png'
 // must NOT be created here: `new Image()` exists only in the browser, but page
 // modules may be evaluated by Node during `nuxt generate` prerendering, which
 // would throw "Image is not defined" in CI. Sprites are created lazily in
-// mounted() instead. (Also: Vue 3 `data()` cannot call component methods.)
+// onMounted() instead.
 const spriteUrls = {
     car1: socargame06,
     car2: socargame03,
@@ -72,351 +73,366 @@ function loadSprites () {
     return sprites
 }
 
-export default {
-    data() {
-        return {
-            data: {
-                fps: 180,
-                speed: 10,
-                canvas: {
-                    width: 420,
-                    height: 480
-                },
-                car1: {
-                    width: 80,
-                    height: 120,
-                    turn: 25,
-                    image: null, // set in mounted() -> loadSprites()
-                    position: {
-                        x: 130,
-                        y: 340
-                    }
-                },
-                car2: {
-                    width: 80,
-                    height: 120,
-                    distance: 350,
-                    image: null
-                },
-                car3: {
-                    width: 80,
-                    height: 120,
-                    distance: 350,
-                    image: null
-                },
-                car4: {
-                    width: 80,
-                    height: 120,
-                    distance: 350,
-                    image: null
-                },
-                car5: {
-                    width: 80,
-                    height: 120,
-                    distance: 350,
-                    image: null
-                },
-                line: {
-                    width: 10,
-                    height: 80,
-                    distance: 120,
-                    pos0: 15,
-                    pos1: 115,
-                    pos2: 215,
-                    pos3: 315,
-                    color: "#efefef"
-                },
-                moves: [30, 130, 230, 330],
-                score: 1,
-                grace: 10
-            },
-            currentSpeed: 10,
-            game: false,
-            muted: false,
-            die: false,
-            car1Move: 0,
-            car1Turn: 0,
-            score: 0,
-            lines: [],
-            car1: [],
-            car2: [],
-            canvas: '',
-            context: '',
-            instruction: '',
-            scoreText: '',
-            lose: ''
+// --- mutable game state --------------------------------------------------
+const currentSpeed = ref(10)
+const game = ref(false)
+const muted = ref(false)
+const die = ref(false)
+const car1Move = ref(0)
+const car1Turn = ref(0)
+const score = ref(0)
+const lines = ref([])
+const car1 = ref([])
+const car2 = ref([])
+
+// Static game configuration / metrics (canvas size, sprites, lanes...)
+const data = reactive({
+    fps: 180,
+    speed: 10,
+    canvas: {
+        width: 420,
+        height: 480
+    },
+    car1: {
+        width: 80,
+        height: 120,
+        turn: 25,
+        image: null, // set in onMounted() -> loadSprites()
+        position: {
+            x: 130,
+            y: 340
         }
     },
-    watch: {
-        muted: function (val) {
-            const audio = document.getElementById('audio')
-            if (audio) {
-                audio.muted = val
-                if (val) {
-                    audio.pause(); audio.currentTime = 0;
-                }
-                else audio.play();
-            }
-        },
+    car2: {
+        width: 80,
+        height: 120,
+        distance: 350,
+        image: null
     },
-    mounted() {
-        this.muted = true;
-        this.canvas =  document.querySelector("#canvas");
-        this.context =  this.canvas.getContext("2d");
-        this.instruction =  document.querySelector("#instruction");
-        this.scoreText =  document.querySelector("#score");
-        this.lose =  document.querySelector("#lose");
-
-        // Instantiate sprites here (browser-only) before starting the render loop.
-        const sprites = loadSprites();
-        this.data.car1.image = sprites.car1;
-        this.data.car2.image = sprites.car2;
-        this.data.car3.image = sprites.car3;
-        this.data.car4.image = sprites.car4;
-        this.data.car5.image = sprites.car5;
-
-        window.addEventListener("keydown", this.onKeydown);
-        this.render()
+    car3: {
+        width: 80,
+        height: 120,
+        distance: 350,
+        image: null
     },
-    beforeUnmount() {
-        window.removeEventListener("keydown", this.onKeydown);
-        if (this._raf) {
-            cancelAnimationFrame(this._raf);
+    car4: {
+        width: 80,
+        height: 120,
+        distance: 350,
+        image: null
+    },
+    car5: {
+        width: 80,
+        height: 120,
+        distance: 350,
+        image: null
+    },
+    line: {
+        width: 10,
+        height: 80,
+        distance: 120,
+        pos0: 15,
+        pos1: 115,
+        pos2: 215,
+        pos3: 315,
+        color: "#efefef"
+    },
+    moves: [30, 130, 230, 330],
+    score: 1,
+    grace: 10
+})
+
+// DOM handles (assigned in onMounted; not reactive by design)
+let canvas = null
+let context = null
+let instruction = null
+let scoreText = null
+let lose = null
+let rafId = null
+let timeoutId = null
+
+watch(muted, (val) => {
+    const audio = document.getElementById('audio')
+    if (audio) {
+        audio.muted = val
+        if (val) {
+            audio.pause(); audio.currentTime = 0;
         }
-        if (this._timeout) {
-            clearTimeout(this._timeout);
-        }
-    },
-    methods: {
-        onKeydown(evt) {
-          evt.preventDefault();
-
-          if (!this.game) {
-            if (evt.keyCode === 13) { //enter
-              this.start()
-            }
-          }
-
-          if (this.car1Move <= 0 && this.car1Turn <= 0) {
-            if (evt.keyCode === 37) { //left
-              this.left()
-            }
-            else if (evt.keyCode === 39) { //right
-              this.right()
-            }
-          }
-        },
-        left() {
-            if (this.car1[0] === this.data.moves[1]) {
-              this.car1Move = this.data.moves[0];
-              this.car1Turn = 1;
-            }
-            else if (this.car1[0] === this.data.moves[2]) {
-              this.car1Move = this.data.moves[1];
-              this.car1Turn = 1;
-            }
-            else if (this.car1[0] === this.data.moves[3]) {
-              this.car1Move = this.data.moves[2];
-              this.car1Turn = 1;
-            }
-        },
-        right() {
-            if (this.car1[0] === this.data.moves[0]) {
-              this.car1Move = this.data.moves[1];
-              this.car1Turn = 2;
-            }
-            else if (this.car1[0] === this.data.moves[1]) {
-              this.car1Move = this.data.moves[2];
-              this.car1Turn = 2;
-            }
-            else if (this.car1[0] === this.data.moves[2]) {
-              this.car1Move = this.data.moves[3];
-              this.car1Turn = 2;
-            }
-        },
-        start() {
-            this.muted = false
-            this.game = true;
-            this.instruction.style.display = "none";
-            this.lose.style.display = "none";
-
-            this.initialize();
-        },
-        clearCanvas() {
-            this.context.clearRect(0, 0, this.data.canvas.width, this.data.canvas.height);
-        },
-        initLines() {
-            var y = this.data.canvas.height - this.data.line.height;
-
-            while (y >= 0) {
-                this.lines.push([
-                    [this.data.line.pos0, y, this.data.line.width, this.data.line.height],
-                    [this.data.line.pos1, y, this.data.line.width, this.data.line.height],
-                    [this.data.line.pos2, y, this.data.line.width, this.data.line.height],
-                    [this.data.line.pos3, y, this.data.line.width, this.data.line.height]
-                ]);
-
-                y -= this.data.line.distance;
-            }
-        },
-        initCar1() {
-            this.car1 = [this.data.car1.position.x, this.data.car1.position.y, this.data.car1.width, this.data.car1.height];
-        },
-        initCar2() {
-            for (var i = 0; i < Math.floor(Math.random() * 2) + 1; i++) {
-                var random = this.data.moves[Math.floor(Math.random() * 4)];
-
-                let min = Math.ceil(2);
-                let max = Math.floor(5);
-                let rand = Math.floor(Math.random() * (max - min + 1)) + min;
-                if (this.car2.length > 0) {
-                    if (random === this.car2[this.car2.length - 1][1]) {
-                        i--;
-                    }
-                    else {
-                        this.car2.push([random, this.data.car2.height * -1, this.data[`car${rand}`].image]);
-                    }
-                }
-                else {
-                    this.car2.push([random, this.data.car2.height * -1, this.data[`car${rand}`].image]);
-                }
-            }
-        },
-        drawLines() {
-            var remove = false;
-
-            this.context.fillStyle = this.data.line.color;
-
-            for (var i = 0; i < this.lines.length; i++) {
-                this.context.fillRect(this.lines[i][0][0], this.lines[i][0][1], this.lines[i][0][2], this.lines[i][0][3]);
-                this.context.fillRect(this.lines[i][1][0], this.lines[i][1][1], this.lines[i][1][2], this.lines[i][1][3]);
-                this.context.fillRect(this.lines[i][2][0], this.lines[i][2][1], this.lines[i][2][2], this.lines[i][2][3]);
-                this.context.fillRect(this.lines[i][3][0], this.lines[i][3][1], this.lines[i][3][2], this.lines[i][3][3]);
-
-                if (this.lines[i][0][1] > this.data.canvas.height) {
-                    remove = i;
-                }
-                else {
-                    this.lines[i][0][1] += this.currentSpeed;
-                    this.lines[i][1][1] += this.currentSpeed;
-                    this.lines[i][2][1] += this.currentSpeed;
-                    this.lines[i][3][1] += this.currentSpeed;
-                }
-            }
-
-            if (this.lines[this.lines.length - 1][0][1] > this.data.line.distance - this.data.line.height) {
-                this.lines.push([
-                    [this.data.line.pos0, (this.data.line.height * -1), this.data.line.width, this.data.line.height],
-                    [this.data.line.pos1, (this.data.line.height * -1), this.data.line.width, this.data.line.height],
-                    [this.data.line.pos2, (this.data.line.height * -1), this.data.line.width, this.data.line.height],
-                    [this.data.line.pos3, (this.data.line.height * -1), this.data.line.width, this.data.line.height]
-                ]);
-            }
-
-            if (remove) {
-                this.lines.splice(remove, 1);
-            }
-        },
-        drawCar1() {
-            if (this.car1Move > 0 && this.car1Turn > 0) {
-                if (this.car1Turn === 1) {
-                    if (this.car1[0] > this.car1Move) {
-                        this.car1[0] -= this.data.car1.turn;
-                    }
-                    else {
-                        this.car1[0] = this.car1Move;
-                        this.car1Move = 0;
-                        this.car1Turn = 0;
-                    }
-                }
-                else if (this.car1Turn === 2) {
-                    if (this.car1[0] < this.car1Move) {
-                        this.car1[0] += this.data.car1.turn;
-                    }
-                    else {
-                        this.car1[0] = this.car1Move;
-                        this.car1Move = 0;
-                        this.car1Turn = 0;
-                    }
-                }
-            }
-            this.context.drawImage(this.data.car1.image, this.car1[0], this.car1[1], this.car1[2], this.car1[3]);
-        },
-        drawCar2() {
-            var remove = false;
-            let min = Math.ceil(2);
-            let max = Math.floor(5);
-            let rand = Math.floor(Math.random() * (max - min + 1)) + min;
-            for (var i = 0; i < this.car2.length; i++) {
-                if (this.car2[i][1] > this.data.canvas.height) {
-                    remove = i;
-                }
-                else {
-                    this.car2[i][1] += this.currentSpeed;
-                }
-                this.context.drawImage(this.car2[i][2], this.car2[i][0], this.car2[i][1], this.data.car2.width, this.data.car2.height);
-            }
-
-            if (this.car2[this.car2.length - 1][1] > this.data.car2.distance) {
-                this.initCar2();
-            }
-
-            if (remove) {
-                this.car2.splice(remove, 1);
-            }
-        },
-        collision() {
-            for (var i = 0; i < this.car2.length; i++) {
-                if (
-                    this.car1[0] + this.data.grace <= this.car2[i][0] + this.data.car2.width
-                    && this.car1[0] + this.data.car1.width - this.data.grace >= this.car2[i][0]
-                    && this.car1[1] + this.data.grace <= this.car2[i][1] + this.data.car2.height
-                    && this.car1[1] + this.data.car2.height - this.data.grace >= this.car2[i][1]
-                ) {
-                    this.die = true;
-                    this.game = false;
-                    this.instruction.style.display = "block";
-                    this.lose.style.display = "block";
-                    this.muted = true
-                }
-            }
-        },
-        incrementScore() {
-            this.score += this.data.score;
-
-            this.scoreText.innerHTML = this.score;
-        },
-        render() {
-            this._timeout = setTimeout(()=> {
-                this._raf = requestAnimationFrame(this.render);
-                // if(this.score) {
-                //  this.currentSpeed = 10 + (this.score/100)
-                // }
-                if (!this.die && this.game) {
-                    this.clearCanvas();
-                    this.drawLines();
-                    this.drawCar1();
-                    this.drawCar2();
-                    this.collision();
-                    this.incrementScore();
-                }
-            }, 1000 / this.data.fps);
-        },
-        initialize() {
-            this.die = false;
-            this.score = 0;
-            this.car1Move = 0;
-            this.car1Turn = 0;
-            this.lines = [];
-            this.car1 = [];
-            this.car2 = [];
-
-            this.initLines();
-            this.initCar1();
-            this.initCar2();
-            this.clearCanvas();
-        },
+        else audio.play();
     }
+})
+
+onMounted(() => {
+    muted.value = true;
+    canvas = document.querySelector("#canvas");
+    context = canvas.getContext("2d");
+    instruction = document.querySelector("#instruction");
+    scoreText = document.querySelector("#score");
+    lose = document.querySelector("#lose");
+
+    // Instantiate sprites here (browser-only) before starting the render loop.
+    const sprites = loadSprites();
+    data.car1.image = sprites.car1;
+    data.car2.image = sprites.car2;
+    data.car3.image = sprites.car3;
+    data.car4.image = sprites.car4;
+    data.car5.image = sprites.car5;
+
+    window.addEventListener("keydown", onKeydown);
+    render()
+})
+
+onBeforeUnmount(() => {
+    window.removeEventListener("keydown", onKeydown);
+    if (rafId) {
+        cancelAnimationFrame(rafId);
+    }
+    if (timeoutId) {
+        clearTimeout(timeoutId);
+    }
+})
+
+function onKeydown(evt) {
+    evt.preventDefault();
+
+    if (!game.value) {
+        if (evt.keyCode === 13) { //enter
+            start()
+        }
+    }
+
+    if (car1Move.value <= 0 && car1Turn.value <= 0) {
+        if (evt.keyCode === 37) { //left
+            left()
+        }
+        else if (evt.keyCode === 39) { //right
+            right()
+        }
+    }
+}
+
+function left() {
+    if (car1.value[0] === data.moves[1]) {
+        car1Move.value = data.moves[0];
+        car1Turn.value = 1;
+    }
+    else if (car1.value[0] === data.moves[2]) {
+        car1Move.value = data.moves[1];
+        car1Turn.value = 1;
+    }
+    else if (car1.value[0] === data.moves[3]) {
+        car1Move.value = data.moves[2];
+        car1Turn.value = 1;
+    }
+}
+
+function right() {
+    if (car1.value[0] === data.moves[0]) {
+        car1Move.value = data.moves[1];
+        car1Turn.value = 2;
+    }
+    else if (car1.value[0] === data.moves[1]) {
+        car1Move.value = data.moves[2];
+        car1Turn.value = 2;
+    }
+    else if (car1.value[0] === data.moves[2]) {
+        car1Move.value = data.moves[3];
+        car1Turn.value = 2;
+    }
+}
+
+function start() {
+    muted.value = false
+    game.value = true;
+    instruction.style.display = "none";
+    lose.style.display = "none";
+
+    initialize();
+}
+
+function clearCanvas() {
+    context.clearRect(0, 0, data.canvas.width, data.canvas.height);
+}
+
+function initLines() {
+    var y = data.canvas.height - data.line.height;
+
+    while (y >= 0) {
+        lines.value.push([
+            [data.line.pos0, y, data.line.width, data.line.height],
+            [data.line.pos1, y, data.line.width, data.line.height],
+            [data.line.pos2, y, data.line.width, data.line.height],
+            [data.line.pos3, y, data.line.width, data.line.height]
+        ]);
+
+        y -= data.line.distance;
+    }
+}
+
+function initCar1() {
+    car1.value = [data.car1.position.x, data.car1.position.y, data.car1.width, data.car1.height];
+}
+
+function initCar2() {
+    for (var i = 0; i < Math.floor(Math.random() * 2) + 1; i++) {
+        var random = data.moves[Math.floor(Math.random() * 4)];
+
+        let min = Math.ceil(2);
+        let max = Math.floor(5);
+        let rand = Math.floor(Math.random() * (max - min + 1)) + min;
+        if (car2.value.length > 0) {
+            if (random === car2.value[car2.value.length - 1][1]) {
+                i--;
+            }
+            else {
+                car2.value.push([random, data.car2.height * -1, data[`car${rand}`].image]);
+            }
+        }
+        else {
+            car2.value.push([random, data.car2.height * -1, data[`car${rand}`].image]);
+        }
+    }
+}
+
+function drawLines() {
+    var remove = false;
+
+    context.fillStyle = data.line.color;
+
+    for (var i = 0; i < lines.value.length; i++) {
+        context.fillRect(lines.value[i][0][0], lines.value[i][0][1], lines.value[i][0][2], lines.value[i][0][3]);
+        context.fillRect(lines.value[i][1][0], lines.value[i][1][1], lines.value[i][1][2], lines.value[i][1][3]);
+        context.fillRect(lines.value[i][2][0], lines.value[i][2][1], lines.value[i][2][2], lines.value[i][2][3]);
+        context.fillRect(lines.value[i][3][0], lines.value[i][3][1], lines.value[i][3][2], lines.value[i][3][3]);
+
+        if (lines.value[i][0][1] > data.canvas.height) {
+            remove = i;
+        }
+        else {
+            lines.value[i][0][1] += currentSpeed.value;
+            lines.value[i][1][1] += currentSpeed.value;
+            lines.value[i][2][1] += currentSpeed.value;
+            lines.value[i][3][1] += currentSpeed.value;
+        }
+    }
+
+    if (lines.value[lines.value.length - 1][0][1] > data.line.distance - data.line.height) {
+        lines.value.push([
+            [data.line.pos0, (data.line.height * -1), data.line.width, data.line.height],
+            [data.line.pos1, (data.line.height * -1), data.line.width, data.line.height],
+            [data.line.pos2, (data.line.height * -1), data.line.width, data.line.height],
+            [data.line.pos3, (data.line.height * -1), data.line.width, data.line.height]
+        ]);
+    }
+
+    if (remove) {
+        lines.value.splice(remove, 1);
+    }
+}
+
+function drawCar1() {
+    if (car1Move.value > 0 && car1Turn.value > 0) {
+        if (car1Turn.value === 1) {
+            if (car1.value[0] > car1Move.value) {
+                car1.value[0] -= data.car1.turn;
+            }
+            else {
+                car1.value[0] = car1Move.value;
+                car1Move.value = 0;
+                car1Turn.value = 0;
+            }
+        }
+        else if (car1Turn.value === 2) {
+            if (car1.value[0] < car1Move.value) {
+                car1.value[0] += data.car1.turn;
+            }
+            else {
+                car1.value[0] = car1Move.value;
+                car1Move.value = 0;
+                car1Turn.value = 0;
+            }
+        }
+    }
+    context.drawImage(data.car1.image, car1.value[0], car1.value[1], car1.value[2], car1.value[3]);
+}
+
+function drawCar2() {
+    var remove = false;
+    let min = Math.ceil(2);
+    let max = Math.floor(5);
+    let rand = Math.floor(Math.random() * (max - min + 1)) + min;
+    for (var i = 0; i < car2.value.length; i++) {
+        if (car2.value[i][1] > data.canvas.height) {
+            remove = i;
+        }
+        else {
+            car2.value[i][1] += currentSpeed.value;
+        }
+        context.drawImage(car2.value[i][2], car2.value[i][0], car2.value[i][1], data.car2.width, data.car2.height);
+    }
+
+    if (car2.value[car2.value.length - 1][1] > data.car2.distance) {
+        initCar2();
+    }
+
+    if (remove) {
+        car2.value.splice(remove, 1);
+    }
+}
+
+function collision() {
+    for (var i = 0; i < car2.value.length; i++) {
+        if (
+            car1.value[0] + data.grace <= car2.value[i][0] + data.car2.width
+            && car1.value[0] + data.car1.width - data.grace >= car2.value[i][0]
+            && car1.value[1] + data.grace <= car2.value[i][1] + data.car2.height
+            && car1.value[1] + data.car2.height - data.grace >= car2.value[i][1]
+        ) {
+            die.value = true;
+            game.value = false;
+            instruction.style.display = "block";
+            lose.style.display = "block";
+            muted.value = true
+        }
+    }
+}
+
+function incrementScore() {
+    score.value += data.score;
+
+    scoreText.innerHTML = score.value;
+}
+
+function render() {
+    timeoutId = setTimeout(()=> {
+        rafId = requestAnimationFrame(render);
+        // if(score.value) {
+        //  currentSpeed.value = 10 + (score.value/100)
+        // }
+        if (!die.value && game.value) {
+            clearCanvas();
+            drawLines();
+            drawCar1();
+            drawCar2();
+            collision();
+            incrementScore();
+        }
+    }, 1000 / data.fps);
+}
+
+function initialize() {
+    die.value = false;
+    score.value = 0;
+    car1Move.value = 0;
+    car1Turn.value = 0;
+    lines.value = [];
+    car1.value = [];
+    car2.value = [];
+
+    initLines();
+    initCar1();
+    initCar2();
+    clearCanvas();
 }
 </script>
 <style scoped>

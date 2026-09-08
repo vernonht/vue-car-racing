@@ -23,7 +23,7 @@
         >
           GitHub
         </a>
-        <NuxtLink to="/game">
+        <NuxtLink :to="fullPath">
           <div class="button--grey">
             Play Game
           </div>
@@ -32,6 +32,11 @@
     </div>
   </div>
 </template>
+
+<script setup>
+  const config = useRuntimeConfig()
+  const fullPath = `${config.app.baseURL}game`
+</script>
 
 <style>
 .container {

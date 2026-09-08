@@ -5,7 +5,7 @@ import tailwindcss from '@tailwindcss/vite'
 const isGhPages = process.env.DEPLOY_ENV === 'GH_PAGES'
 
 export default defineNuxtConfig({
-  compatibilityDate: 'YYYY-MM-DD',
+  compatibilityDate: '2026-09-08',
   // SPA mode (Nuxt 2 `mode: 'spa'`)
   ssr: false,
 
