@@ -1,38 +1,65 @@
 <template>
     <div class="box">
-        <div class="flex">
-            <pre id="speed">speed {{currentSpeed}}</pre>
-            <div class="ml-auto">
-                <button class="border hover:bg-gray-200 rounded w-10 mr-2" type="button" name="button" @click="currentSpeed++">+</button>
-                <button class="border hover:bg-gray-200 rounded w-10" type="button" name="button" @click="currentSpeed--">-</button>
+        <!-- speed controls -->
+        <div class="flex items-center justify-between mb-2">
+            <div class="flex items-center gap-1.5 rounded-xl bg-white border border-gray-200 px-2.5 py-1.5 shadow-sm">
+                <svg class="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                <span class="text-gray-500 text-xs font-semibold uppercase tracking-wider">Speed</span>
+                <span id="speed" class="text-gray-900 text-sm font-bold tabular-nums leading-none">{{ currentSpeed }}</span>
+            </div>
+            <div class="flex gap-2">
+                <button class="ctrl" type="button" aria-label="Increase speed" title="Increase speed" @click="currentSpeed++">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
+                        <path d="M12 5v14M5 12h14" />
+                    </svg>
+                </button>
+                <button class="ctrl" type="button" aria-label="Decrease speed" title="Decrease speed" @click="currentSpeed--">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
+                        <path d="M5 12h14" />
+                    </svg>
+                </button>
             </div>
         </div>
+
         <div class="hidden">
             <audio controls autoplay loop id="audio">
                 <!-- <source src="../assets/bgm.mp3" type="audio/mpeg"> -->
                 Your browser does not support the audio element.
             </audio>
         </div>
-        <canvas id="canvas" :width="data.canvas.width" :height="data.canvas.height" tabindex="0"></canvas>
-        <pre id="score">0</pre>
-        <div class="flex flex-col px-10" id="instruction">
-            <div>Press "Enter" key to start the game.</div>
-            <div>Controls:</div>
-            <div>"Left" Arrow key</div>
-            <div>"Right" Arrow key</div>
+
+        <!-- game canvas + in-canvas overlays (score / instructions / lose) -->
+        <div class="game-stage">
+            <canvas id="canvas" :width="data.canvas.width" :height="data.canvas.height" tabindex="0"></canvas>
+            <pre id="score">0</pre>
+            <div class="flex flex-col px-10" id="instruction">
+                <div>Press "Enter" key to start the game.</div>
+                <div>Controls:</div>
+                <div>"Left" Arrow key</div>
+                <div>"Right" Arrow key</div>
+            </div>
+            <pre id="lose">You lose! Try again?</pre>
         </div>
-        <pre id="lose">You lose! Try again?</pre>
-        <div class="flex justify-between my-4">
-            <div class="flex items-center justify-center shadow hover:shadow-lg border rounded-full w-16 h-16" @click="left">
-                <
-            </div>
-            <div class="flex items-center justify-center shadow hover:shadow-lg border rounded-full w-16 h-16" @click="start">
-                Start
-            </div>
-            <div class="flex items-center justify-center shadow hover:shadow-lg border rounded-full w-16 h-16" @click="right">
-                >
-            </div>
+
+        <!-- touch controls -->
+        <div class="flex justify-between items-center my-4 select-none">
+            <button class="gpad" type="button" aria-label="Move left" title="Move left" @click="left">
+                <svg class="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M15 19l-7-7 7-7" />
+                </svg>
+            </button>
+            <button class="gpad gpad--start" type="button" @click="start">
+                {{ game ? 'Restart' : (die ? 'Play again' : 'Start') }}
+            </button>
+            <button class="gpad" type="button" aria-label="Move right" title="Move right" @click="right">
+                <svg class="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M9 5l7 7-7 7" />
+                </svg>
+            </button>
         </div>
+
         <div class="flex flex-col justify-end">
             <span class="text-right">Inspired by Takane Ichinose</span>
             <span class="text-right">
@@ -438,6 +465,9 @@ function initialize() {
 <style scoped>
 
 .box {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
     width: 420px;
 position: absolute;
 top: calc(50% - 240px);
@@ -448,6 +478,7 @@ left: calc(50% - 170px);
 background: url('../assets/socargame-01.png');
 margin: 0 auto;
 outline: none;
+background-size: cover;
 }
 
 #score {
@@ -456,7 +487,7 @@ font-weight: bold;
 color: white;
 display: block;
 position: absolute;
-top: 30px;
+top: 4px;
 left: 10px;
 text-shadow: -2px 0 black, -2px 2px black, -2px -2px black, 0 2px black, 2px 0 black, 2px 2px black, 2px -2px black, 0 -2px black;
 }
@@ -475,13 +506,97 @@ text-shadow: -2px 0 black, -2px 2px black, -2px -2px black, 0 2px black, 2px 0 b
 
 #lose {
 width: 100%;
-font-size: 14px;
+font-size: 18px;
 font-weight: bold;
 color: white;
 display: none;
 position: absolute;
 top: 150px;
-left: 30px;
+left: 40px;
 text-shadow: -2px 0 black, -2px 2px black, -2px -2px black, 0 2px black, 2px 0 black, 2px 2px black, 2px -2px black, 0 -2px black;
+}
+
+/* ---------- layout: wraps canvas + in-canvas overlays ---------- */
+.game-stage {
+    position: relative;
+    width: 420px;
+    height: 480px;
+    margin: 0 auto;
+}
+
+/* ---------- control buttons ---------- */
+.ctrl,
+.gpad {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #d1d5db;
+    background: #fff;
+    color: #374151;
+    cursor: pointer;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    transition: background-color 0.15s ease, border-color 0.15s ease,
+        color 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
+}
+
+/* speed + / - (secondary) */
+.ctrl {
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+/* gamepad round buttons (left / right) */
+.gpad {
+    width: 64px;
+    height: 64px;
+    border-radius: 9999px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.ctrl:hover,
+.gpad:hover {
+    background: #f3f4f6;
+    border-color: #9ca3af;
+}
+
+.ctrl:active,
+.gpad:active {
+    transform: scale(0.92);
+}
+
+.ctrl:focus-visible,
+.gpad:focus-visible {
+    outline: 2px solid #3b8070;
+    outline-offset: 2px;
+}
+
+/* primary action pill: Start / Restart / Play again */
+.gpad--start {
+    width: auto;
+    min-width: 132px;
+    height: 64px;
+    padding: 0 26px;
+    border-radius: 9999px;
+    background: #3b8070;
+    border-color: #3b8070;
+    color: #fff;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.gpad--start:hover {
+    background: #34695c;
+    border-color: #34695c;
+}
+
+.gpad--start:active {
+    transform: scale(0.95);
+    background: #2d5c51;
 }
 </style>
