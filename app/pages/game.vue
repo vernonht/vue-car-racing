@@ -49,21 +49,27 @@ import socargame05 from '@/assets/socargame-05.png'
 import socargame06 from '@/assets/socargame-06.png'
 import socargame07 from '@/assets/socargame-07.png'
 
-function loadImage (src) {
-    const img = new Image()
-    img.src = src
-    return img
+// Only the URLs are safe at module scope (plain strings). The `Image` objects
+// must NOT be created here: `new Image()` exists only in the browser, but page
+// modules may be evaluated by Node during `nuxt generate` prerendering, which
+// would throw "Image is not defined" in CI. Sprites are created lazily in
+// mounted() instead. (Also: Vue 3 `data()` cannot call component methods.)
+const spriteUrls = {
+    car1: socargame06,
+    car2: socargame03,
+    car3: socargame04,
+    car4: socargame05,
+    car5: socargame07
 }
 
-// Car sprites are created at module scope: Vue 3 `data()` has no access to
-// component methods, so the Vue 2 trick of calling `this.base64ToImg()`
-// inside `data()` no longer works.
-const carImages = {
-    car1: loadImage(socargame06),
-    car2: loadImage(socargame03),
-    car3: loadImage(socargame04),
-    car4: loadImage(socargame05),
-    car5: loadImage(socargame07)
+function loadSprites () {
+    const sprites = {}
+    for (const key in spriteUrls) {
+        const img = new Image()
+        img.src = spriteUrls[key]
+        sprites[key] = img
+    }
+    return sprites
 }
 
 export default {
@@ -80,7 +86,7 @@ export default {
                     width: 80,
                     height: 120,
                     turn: 25,
-                    image: carImages.car1,
+                    image: null, // set in mounted() -> loadSprites()
                     position: {
                         x: 130,
                         y: 340
@@ -90,25 +96,25 @@ export default {
                     width: 80,
                     height: 120,
                     distance: 350,
-                    image: carImages.car2
+                    image: null
                 },
                 car3: {
                     width: 80,
                     height: 120,
                     distance: 350,
-                    image: carImages.car3
+                    image: null
                 },
                 car4: {
                     width: 80,
                     height: 120,
                     distance: 350,
-                    image: carImages.car4
+                    image: null
                 },
                 car5: {
                     width: 80,
                     height: 120,
                     distance: 350,
-                    image: carImages.car5
+                    image: null
                 },
                 line: {
                     width: 10,
@@ -160,6 +166,14 @@ export default {
         this.instruction =  document.querySelector("#instruction");
         this.scoreText =  document.querySelector("#score");
         this.lose =  document.querySelector("#lose");
+
+        // Instantiate sprites here (browser-only) before starting the render loop.
+        const sprites = loadSprites();
+        this.data.car1.image = sprites.car1;
+        this.data.car2.image = sprites.car2;
+        this.data.car3.image = sprites.car3;
+        this.data.car4.image = sprites.car4;
+        this.data.car5.image = sprites.car5;
 
         window.addEventListener("keydown", this.onKeydown);
         this.render()
