@@ -3,8 +3,8 @@
         <div class="flex">
             <pre id="speed">speed {{currentSpeed}}</pre>
             <div class="ml-auto">
-                <button class="border hover:bg-grey-200 rounded w-10 mr-2" type="button" name="button" @click="currentSpeed++">+</button>
-                <button class="border hover:bg-grey-200 rounded w-10" type="button" name="button" @click="currentSpeed--">-</button>
+                <button class="border hover:bg-gray-200 rounded w-10 mr-2" type="button" name="button" @click="currentSpeed++">+</button>
+                <button class="border hover:bg-gray-200 rounded w-10" type="button" name="button" @click="currentSpeed--">-</button>
             </div>
         </div>
         <div class="hidden">
@@ -43,11 +43,28 @@
 </template>
 
 <script>
-import socargame06 from '@/assets/socargame-06.png'
 import socargame03 from '@/assets/socargame-03.png'
 import socargame04 from '@/assets/socargame-04.png'
 import socargame05 from '@/assets/socargame-05.png'
+import socargame06 from '@/assets/socargame-06.png'
 import socargame07 from '@/assets/socargame-07.png'
+
+function loadImage (src) {
+    const img = new Image()
+    img.src = src
+    return img
+}
+
+// Car sprites are created at module scope: Vue 3 `data()` has no access to
+// component methods, so the Vue 2 trick of calling `this.base64ToImg()`
+// inside `data()` no longer works.
+const carImages = {
+    car1: loadImage(socargame06),
+    car2: loadImage(socargame03),
+    car3: loadImage(socargame04),
+    car4: loadImage(socargame05),
+    car5: loadImage(socargame07)
+}
 
 export default {
     data() {
@@ -63,8 +80,7 @@ export default {
                     width: 80,
                     height: 120,
                     turn: 25,
-                    image: this.base64ToImg("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAFAAAAB4CAYAAAES6UVgAAAABGdBTUEAALGPC/xhBQAAAAZiS0dEAP8A/wD/oL2nkwAAAAlwSFlzAAALEwAACxMBAJqcGAAAAAd0SU1FB+ALAQYyDYKwsygAAAAdaVRYdENvbW1lbnQAAAAAAENyZWF0ZWQgd2l0aCBHSU1QZC5lBwAABM1JREFUeNrtnLGL3EYUxn9S1sRFFpbksFFsSGmz/4APN07cHITDJLg4cOMiKQzmCsMdJEVc+B9w4+JgO4PBENyk2TJujMFdXIYUd02OYFKEDbi44EkhaU+rk1Yj7Wg1e/d98Ni7lTTz7TdvZp7ejAQncRU4AvrZL4PM34ZyBGF6kik5LfneBBalAdAD/gKIoqj0pMPDQ8Ioii5ggRBL9LLFOynR/YmBjYYzP6ZSxzpVY1t9Hi+BUVmJ80oNpvIYU151eqyePPOkSeUJoigy7t2sysWiKFodN7PR0X3VZXiQFFBl/Xnu2DOGI4AgsK85HQSDIC5roR5TgB8DYB14baN6VYukDvEahwijKFqIWb4T9IpoL8QQxziDBc70UVd+6Bx/Wg4EVmYbEtWdTediB/gH+APYbFqiacooLCiozk83yWh1Ent7GGMwe3v2DWBMbMD4RE3DYXxwOGxUoAEutzFiB6HDwgCG067notutyPDlaj6pHVh19pOtb0U0SanAlY0cnPaUMzQeet8oIXDDYXk3nM/LTS76Apg0jB932ghwb7oMcAusWduncVUmtnJuGxvHddy+ze/WIem7d8cXGhP/3wbBbB0ZIR6WEdvKXnz9Oub9+/izzSYejWKravrvW/azxv5ZOCy4jBabTiIJ/gspSHt6hF6YNK+3CPEcvay/uQrXXd3prIaClr1JPiiCIiiCItgRnN8nLmUm8SgelA+qk3ih4JrvCs7ctPvGzXsfXBR94vXGEfHa4xHxOuRL4kzW1S5I7TTMEkyIU3etKeUypfHAJbk2cy83FyG2zhKTRLXw+DH7ac5ue7s9YrncoPWIMi5JLDq13d3ZOnZ3MWXRVRYPKc98OrWDg9k6Dg6qm/sy81OzTm0wmK1jMKj2yZkCxuPY2uwcly5hJpP4M3dsK0/uBzxM/y5rrGtq08Tq0FOC0yT6Ub57e3TTFIQ2Y0+HWPc9HvzOd4K3fCd4QffFC+dm0iHFxzUSpT5E0NsEppbCRFAERVAERVAERVAERVAELbESy7Grd0+iTRXqxSIogppJpODpamI8bubp+5YCz4h9nXJy/ZoE1y17+vdu1cVF4BvgKe7Xlp8mZV88DUKdB74F9ul+0X4/4XLeZ8E+Bu7j786HvN1POHeKAfB8hUQrs+fJb1kO7t3j5/E4fmp2PG7/yVla3pY1GsVbs0YjzJUr/NKWbufW13mb3xCXtTov1Ona8pvu8ra2xm/AOVfxxDMKHijPW1sPmLOEbZV5y2yzfFYVhM6LszaBD8AdgBcv5itdddwnPHliffxOosFmXa97U9Ry29vFLdbmFmaW8G6HrG1slF7zpsgb8198QvwsgFCOPvBvURfuSzwrTMi8WDTIfH6QNrVzRSZdenhUdXZXyxFdwWJL2CPgpwD4FPhbAtYWEOCzkIKHIQRrbIXAXenQGHdD4Jp0aIxryvg6mIoFCdgdekXhiU/b4n1CkVbyQHVhCSgBz/Qk4vjeUB4oSEAJKAEloCABJaAElICCBJSAElACChJQAkrAUwvvH4iUB0pAYR6s10S0P1AeqC4sASWgIAEloO5E5IHCMT5KvPBLSdG8C5MI+KvkqI2v8l98Drxi9V8k0aa9SnSa8cA8NLHM77GaRDQLe4L/AQwSmpBDGIdrAAAAAElFTkSuQmCC"),
-                    image: this.base64ToImg(socargame06),
+                    image: carImages.car1,
                     position: {
                         x: 130,
                         y: 340
@@ -74,25 +90,25 @@ export default {
                     width: 80,
                     height: 120,
                     distance: 350,
-                    image: this.base64ToImg(socargame03)
+                    image: carImages.car2
                 },
                 car3: {
                     width: 80,
                     height: 120,
                     distance: 350,
-                    image: this.base64ToImg(socargame04)
+                    image: carImages.car3
                 },
                 car4: {
                     width: 80,
                     height: 120,
                     distance: 350,
-                    image: this.base64ToImg(socargame05)
+                    image: carImages.car4
                 },
                 car5: {
                     width: 80,
                     height: 120,
                     distance: 350,
-                    image: this.base64ToImg(socargame07)
+                    image: carImages.car5
                 },
                 line: {
                     width: 10,
@@ -122,28 +138,43 @@ export default {
             context: '',
             instruction: '',
             scoreText: '',
-            lose: '',
+            lose: ''
         }
     },
     watch: {
         muted: function (val) {
-            $('#audio').prop("muted", val);
-            const audio = document.getElementById('audio');
-            if (val) {
-                audio.pause(); audio.currentTime = 0;
+            const audio = document.getElementById('audio')
+            if (audio) {
+                audio.muted = val
+                if (val) {
+                    audio.pause(); audio.currentTime = 0;
+                }
+                else audio.play();
             }
-            else audio.play();
         },
     },
     mounted() {
         this.muted = true;
         this.canvas =  document.querySelector("#canvas");
-        this.context =  canvas.getContext("2d");
+        this.context =  this.canvas.getContext("2d");
         this.instruction =  document.querySelector("#instruction");
         this.scoreText =  document.querySelector("#score");
         this.lose =  document.querySelector("#lose");
 
-        window.addEventListener("keydown", (evt)=> {
+        window.addEventListener("keydown", this.onKeydown);
+        this.render()
+    },
+    beforeUnmount() {
+        window.removeEventListener("keydown", this.onKeydown);
+        if (this._raf) {
+            cancelAnimationFrame(this._raf);
+        }
+        if (this._timeout) {
+            clearTimeout(this._timeout);
+        }
+    },
+    methods: {
+        onKeydown(evt) {
           evt.preventDefault();
 
           if (!this.game) {
@@ -160,10 +191,7 @@ export default {
               this.right()
             }
           }
-        });
-        this.render()
-    },
-    methods: {
+        },
         left() {
             if (this.car1[0] === this.data.moves[1]) {
               this.car1Move = this.data.moves[0];
@@ -199,11 +227,6 @@ export default {
             this.lose.style.display = "none";
 
             this.initialize();
-        },
-        base64ToImg(value) {
-            var img = new Image();
-            img.src = value;
-            return img;
         },
         clearCanvas() {
             this.context.clearRect(0, 0, this.data.canvas.width, this.data.canvas.height);
@@ -349,9 +372,9 @@ export default {
 
             this.scoreText.innerHTML = this.score;
         },
-        render(callback) {
-            setTimeout(()=> {
-                requestAnimationFrame(this.render);
+        render() {
+            this._timeout = setTimeout(()=> {
+                this._raf = requestAnimationFrame(this.render);
                 // if(this.score) {
                 //  this.currentSpeed = 10 + (this.score/100)
                 // }
@@ -382,7 +405,7 @@ export default {
     }
 }
 </script>
-<style media="screen" scoped>
+<style scoped>
 
 .box {
     width: 420px;
@@ -392,7 +415,6 @@ left: calc(50% - 170px);
 }
 
 #canvas {
-background: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAUAAAAHgCAIAAAEs6ROFAAAABGdBTUEAALGPC/xhBQAAAAZiS0dEAP8A/wD/oL2nkwAAAAlwSFlzAAALEwAACxMBAJqcGAAAAAd0SU1FB+ALAQoxK3KKnHIAAAAdaVRYdENvbW1lbnQAAAAAAENyZWF0ZWQgd2l0aCBHSU1QZC5lBwAABdZJREFUeNrt3UGK8zoQhVEpi7D2v7zSJioDh+BAJg5ERtY5w8cDUfn6Nj80TdfMUkppbSsDRfRHuYiHPexhD3vYwx72sIc97GEPe9jDHvawhz3sYQ972MMe9rCHPezhX9TxP1uM6Bp72MMe9rCHPexhD3vYwx72sIc97GEPe9jDHvawhz3sYQ972MOzPfz62eJu8G8vjrT/QPPKT3q5Ly0HO9jBDnawgx3sYAc72MEOdrCDHexgBzvYwQ52sIMd7GAHO9jBDnawgx3sYAc72MEOdrCDHexgBzvYwQ52sIMd7GAHO9jBDnbwpJb43cP3Lx76knawgx3sYAc72MEOdrCDHexgBzvYwQ52sIMd7GAHO9jBDnawgx3sYAc72MEOdrCDHexgBzvYwQ52sIMd7GAHO9jBDnawgx3sYAc72MEOdrCDHexgBzvYwQ52sIMd7GAHO9jBDnawgx3sYAc72MEOdrCDHexgBzvYwQ52sIMd7GAHO9jBDnawgx3sYAc72MEOdrCDHexgBzv4jI+/e3h017+BeGPHP++47le0b1kIjMAIjMAIjMACIzACIzACIzACI7DACIzACIzACIzAAiMwAiMwAiMwAgvsIxAYgREYgREYgRFYYARGYARGYARGYIERGIERGIERGIERWGAERmAERmAERmCBERiBERiBERiBBUZgBEZgBEZgBEZggREYgREYgREYgQVGYARGYARGYAQWGIERGIERGIERGIEFRmAERmAERmAEFhiBERiBERiBERiBBUZgBEZgBEZgBF5LzfzyX1vbfDRziegW7Fs0AiMwAiMwAiOwwD4CgREYgREYgREYgQVGYARGYARGYAQWGIERGIERGIERGIEFRmAERmAERmAEFhiBERiBERiBEVhgBEZgBEZgBEZgBBYYgREYgREYgRFYYARGYARGYARGYIERGIERGIERGIERWGAERmAERmAERmCBERiBERiBERiBEVhgBEZgBEZgBEZggREYgREYgREYgQVGYARGYARGYARGYIERGIERGIERGIEFRmAERmAERmAEFhiBERiBERiBERiBBUZgBEZgBEZgBBYYgREYgREYgREYgQVGYARGYARGYAQWGIERGIERGIERWGAERmAERmAERmAEFhiBERiBERiBEVhgBEZgBEZgBEZggREYgREYgREYgRFYYARGYARGYARGYIERGIERGIERGIERWGAERmAERmAERmCBERiBERiBERiBBUZgBEZgBEZgBEZggREYgREYgREYgQVGYOZRM0/8361tPjL4q4juOzT4JxZgwIABAwYMBgwYMGDAYMCAAQMGDBgwGDBgwIABAwYMBgwYMGDAYMCAAQMGDBgwGDBgwIABAwYMBgwYMGDAYMCAAQMGDBgwGDBgwIABgwEDBgwYMGDAYMCAAQMGDBgwGDBgwIABgwEDBgwYMGDAYMCAAQMGDBgwGDBgwIABgwEDBgwYMGDAYMCAAQMGDBgwGDBgwIABgwEDBgwYMGDAYMCAAQMGDAYMGDBgwIABgwEDBgwYMGDAYMCAAQMGDAYMGDBgwIABgwEDBgwYMGDAYMCAAQMGDAYMGDBgwIABgwEDBgwYMBgwYMCAAQMGDAYMGDBgwIABgwEDBgwYMBgwYMCAAQMGDAYMGDBgwIABgwEDBgwYMBgwYMCAAQMGDAYMGDBgwIABgwEDBgwYMBgwYMCAAQMGDAYMGDBgwGDAgAEDBgwYMBgwYMCAAQMGDAYMGDBgwGDAgAEDBgwYMBgwYMCAAQMGDAYMGDBgwGDAgAEDBgwYMBgwYMCAAQMGDAYMGDBgwGDAgAEDBgwYMBgwYMCAAYMBAwYMGDBgwGDAgAEDBgwYMBgwYMCAAYMBAwYMGDBgwGDAgAEDBgwYMBgwYMCAAYMBAwYMGDBgwGDAgAEDBgwG7CMAAwYMGDBgMGDAgAEDBgwYDBgwYMCAwYABAwYMGDBgMGDAgAEDBgwYDBgwYMCAwYABAwaGeALhgyn0oJdhpwAAAABJRU5ErkJggg==");
 background: url('../assets/socargame-01.png');
 margin: 0 auto;
 outline: none;
