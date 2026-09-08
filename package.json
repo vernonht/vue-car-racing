@@ -1,20 +1,25 @@
 {
   "name": "car-racing",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "My doozie Nuxt.js project",
   "author": "Jian Hao",
   "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.19.0"
+  },
   "scripts": {
-    "dev": "nuxt",
+    "dev": "nuxt dev",
     "build": "nuxt build",
-    "build:gh-pages": "DEPLOY_ENV=GH_PAGES nuxt build",
-    "start": "nuxt start",
-    "generate": "nuxt generate"
+    "build:gh-pages": "DEPLOY_ENV=GH_PAGES nuxt generate",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview"
   },
   "dependencies": {
-    "nuxt": "^2.15.8"
+    "nuxt": "^4.5.2"
   },
   "devDependencies": {
-    "@nuxtjs/tailwindcss": "^1.0.0"
+    "@tailwindcss/vite": "^4.1.0",
+    "tailwindcss": "^4.1.0"
   }
 }
