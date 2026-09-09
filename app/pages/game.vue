@@ -1,85 +1,87 @@
 <template>
-    <div class="box" :style="{ width: data.canvas.width + 'px' }">
-        <!-- speed controls -->
-        <div class="flex items-center justify-between mb-2">
-            <div class="flex items-center gap-1.5 rounded-xl bg-white border border-gray-200 px-2.5 py-1.5 shadow-sm">
-                <svg class="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-                <span class="text-gray-500 text-xs font-semibold uppercase tracking-wider">Speed</span>
-                <span id="speed" class="text-gray-900 text-sm font-bold tabular-nums leading-none">{{ currentSpeed }}</span>
+    <div class="flex justify-center items-center h-screen">
+        <div class="box" :style="{ width: data.canvas.width + 'px' }">
+            <!-- speed controls -->
+            <div class="flex items-center justify-between mb-2">
+                <div class="flex items-center gap-1.5 rounded-xl bg-white border border-gray-200 px-2.5 py-1.5 shadow-sm">
+                    <svg class="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                    <span class="text-gray-500 text-xs font-semibold uppercase tracking-wider">Speed</span>
+                    <span id="speed" class="text-gray-900 text-sm font-bold tabular-nums leading-none">{{ currentSpeed }}</span>
+                </div>
+                <div class="flex gap-2">
+                    <button class="ctrl" type="button" aria-label="Increase speed" title="Increase speed" @click="setCurrentSpeed(currentSpeed + 1)">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
+                            <path d="M12 5v14M5 12h14" />
+                        </svg>
+                    </button>
+                    <button class="ctrl" type="button" aria-label="Decrease speed" title="Decrease speed" @click="setCurrentSpeed(currentSpeed - 1)">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
+                            <path d="M5 12h14" />
+                        </svg>
+                    </button>
+                </div>
             </div>
-            <div class="flex gap-2">
-                <button class="ctrl" type="button" aria-label="Increase speed" title="Increase speed" @click="setCurrentSpeed(currentSpeed + 1)">
-                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
-                        <path d="M12 5v14M5 12h14" />
+    
+            <!-- lane controls: 3-8 lanes, canvas width follows -->
+            <div class="flex items-center justify-center gap-2 my-2 select-none">
+                <button class="ctrl" type="button" :disabled="game || laneCount <= 3" aria-label="Remove lane" title="Remove lane (min 3)" @click="setLaneCount(laneCount - 1)">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14" /></svg>
+                </button>
+                <div class="flex items-center gap-1.5 rounded-xl bg-white border border-gray-200 px-3 py-1.5 shadow-sm">
+                    <svg class="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" d="M6 5v14M12 5v14M18 5v14" /></svg>
+                    <span class="text-gray-500 text-xs font-semibold uppercase tracking-wider">Lanes</span>
+                    <span class="text-gray-900 text-sm font-bold tabular-nums leading-none">{{ laneCount }}</span>
+                </div>
+                <button class="ctrl" type="button" :disabled="game || laneCount >= 8" aria-label="Add lane" title="Add lane (max 8)" @click="setLaneCount(laneCount + 1)">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+                </button>
+            </div>
+    
+            <div class="hidden">
+                <audio controls autoplay loop id="audio">
+                    <!-- <source src="../assets/bgm.mp3" type="audio/mpeg"> -->
+                    Your browser does not support the audio element.
+                </audio>
+            </div>
+    
+            <!-- game canvas + in-canvas overlays (score / instructions / lose) -->
+            <div class="game-stage">
+                <canvas id="canvas" :width="data.canvas.width" :height="data.canvas.height" tabindex="0"></canvas>
+                <pre id="score">0</pre>
+                <div class="flex flex-col px-10" id="instruction">
+                    <div>Press "Enter" key to start the game.</div>
+                    <div>Controls:</div>
+                    <div>"Left" Arrow key</div>
+                    <div>"Right" Arrow key</div>
+                </div>
+                <pre id="lose">You lose! Try again?</pre>
+            </div>
+    
+            <!-- touch controls -->
+            <div class="flex justify-between items-center my-4 select-none">
+                <button class="gpad" type="button" aria-label="Move left" title="Move left" @click="left">
+                    <svg class="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M15 19l-7-7 7-7" />
                     </svg>
                 </button>
-                <button class="ctrl" type="button" aria-label="Decrease speed" title="Decrease speed" @click="setCurrentSpeed(currentSpeed - 1)">
-                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
-                        <path d="M5 12h14" />
+                <button class="gpad gpad--start" type="button" @click="start">
+                    {{ game ? 'Restart' : (die ? 'Play again' : 'Start') }}
+                </button>
+                <button class="gpad" type="button" aria-label="Move right" title="Move right" @click="right">
+                    <svg class="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M9 5l7 7-7 7" />
                     </svg>
                 </button>
             </div>
-        </div>
-
-        <!-- lane controls: 3-8 lanes, canvas width follows -->
-        <div class="flex items-center justify-center gap-2 my-2 select-none">
-            <button class="ctrl" type="button" :disabled="game || laneCount <= 3" aria-label="Remove lane" title="Remove lane (min 3)" @click="setLaneCount(laneCount - 1)">
-                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14" /></svg>
-            </button>
-            <div class="flex items-center gap-1.5 rounded-xl bg-white border border-gray-200 px-3 py-1.5 shadow-sm">
-                <svg class="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" d="M6 5v14M12 5v14M18 5v14" /></svg>
-                <span class="text-gray-500 text-xs font-semibold uppercase tracking-wider">Lanes</span>
-                <span class="text-gray-900 text-sm font-bold tabular-nums leading-none">{{ laneCount }}</span>
+    
+            <div class="flex flex-col justify-end">
+                <span class="text-right">Inspired by Takane Ichinose</span>
+                <span class="text-right">
+                    <a href="https://codepen.io/takaneichinose/pen/MjNpXb">https://codepen.io/takaneichinose/pen/MjNpXb</a>
+                </span>
             </div>
-            <button class="ctrl" type="button" :disabled="game || laneCount >= 8" aria-label="Add lane" title="Add lane (max 8)" @click="setLaneCount(laneCount + 1)">
-                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
-            </button>
-        </div>
-
-        <div class="hidden">
-            <audio controls autoplay loop id="audio">
-                <!-- <source src="../assets/bgm.mp3" type="audio/mpeg"> -->
-                Your browser does not support the audio element.
-            </audio>
-        </div>
-
-        <!-- game canvas + in-canvas overlays (score / instructions / lose) -->
-        <div class="game-stage">
-            <canvas id="canvas" :width="data.canvas.width" :height="data.canvas.height" tabindex="0"></canvas>
-            <pre id="score">0</pre>
-            <div class="flex flex-col px-10" id="instruction">
-                <div>Press "Enter" key to start the game.</div>
-                <div>Controls:</div>
-                <div>"Left" Arrow key</div>
-                <div>"Right" Arrow key</div>
-            </div>
-            <pre id="lose">You lose! Try again?</pre>
-        </div>
-
-        <!-- touch controls -->
-        <div class="flex justify-between items-center my-4 select-none">
-            <button class="gpad" type="button" aria-label="Move left" title="Move left" @click="left">
-                <svg class="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <path d="M15 19l-7-7 7-7" />
-                </svg>
-            </button>
-            <button class="gpad gpad--start" type="button" @click="start">
-                {{ game ? 'Restart' : (die ? 'Play again' : 'Start') }}
-            </button>
-            <button class="gpad" type="button" aria-label="Move right" title="Move right" @click="right">
-                <svg class="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <path d="M9 5l7 7-7 7" />
-                </svg>
-            </button>
-        </div>
-
-        <div class="flex flex-col justify-end">
-            <span class="text-right">Inspired by Takane Ichinose</span>
-            <span class="text-right">
-                <a href="https://codepen.io/takaneichinose/pen/MjNpXb">https://codepen.io/takaneichinose/pen/MjNpXb</a>
-            </span>
         </div>
     </div>
 </template>
@@ -116,7 +118,7 @@ function loadSprites () {
 }
 
 // --- mutable game state --------------------------------------------------
-const currentSpeed = ref(10)
+const currentSpeed = ref(5)
 const maxSpeed = ref(20)
 const game = ref(false)
 const muted = ref(false)
@@ -175,7 +177,6 @@ const data = reactive({
         width: 10,
         height: 80,
         distance: 120,
-        dashes: [], // x of dashed lane dividers; regenerated in applyLaneCount()
         color: "#efefef"
     },
     moves: [], // lane centre x positions; regenerated in applyLaneCount()
@@ -184,14 +185,13 @@ const data = reactive({
 })
 
 // --- dynamic lanes ------------------------------------------------------
-// Lane pitch is fixed at 100px: lane i's centre sits at x = 30 + i*100 and the
-// dashed dividers run at x = 15 + i*100. The canvas width tracks the lane
-// count so the road always spans the full canvas: width = lanes*100 + 20
-// (4 lanes = 420px, 3 lanes = 320px, 8 lanes = 820px).
+// Lane pitch is fixed at 100px: lane i's centre sits at x = 30 + i*100, the
+// dashed dividers run 15px to the left of each centre, and the canvas width
+// tracks the lane count so the road always spans the canvas: width = lanes*100
+// + 20 (4 lanes = 420px, 3 lanes = 320px, 8 lanes = 820px).
 const LANE = {
     pitch: 100,
     firstX: 30,
-    dashX: 15,
     min: 3,
     max: 8
 }
@@ -200,27 +200,16 @@ function applyLaneCount (count) {
     const n = Math.min(LANE.max, Math.max(LANE.min, count))
     laneCount.value = n
 
-    const moves = []
-    const dashes = []
-    for (let i = 0; i < n; i++) {
-        moves.push(LANE.firstX + LANE.pitch * i)
-        dashes.push(LANE.dashX + LANE.pitch * i)
-    }
-
-    data.moves = moves
-    data.line.dashes = dashes
+    data.moves = Array.from({ length: n }, (_, i) => LANE.firstX + LANE.pitch * i)
     data.canvas.width = LANE.pitch * n + 20
 
     // park the player car on the centre lane
-    data.car1.position.x = moves[Math.floor((n - 1) / 2)]
+    data.car1.position.x = data.moves[Math.floor((n - 1) / 2)]
 }
 
 function setLaneCount (count) {
     if (game.value) return // do not resize mid-race
     applyLaneCount(count)
-    // clear stale scenery so the next start() rebuilds it at the new width
-    lines.value = []
-    car2.value = []
 }
 
 // initial geometry: the classic 4-lane layout
@@ -332,8 +321,9 @@ function initLines() {
     var y = data.canvas.height - data.line.height;
 
     while (y >= 0) {
+        // dividers are just the lane centres, 15px to the left
         lines.value.push(
-            data.line.dashes.map(x => [x, y, data.line.width, data.line.height])
+            data.moves.map(x => [x - 15, y, data.line.width, data.line.height])
         );
         y -= data.line.distance;
     }
@@ -508,11 +498,11 @@ function initialize() {
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
-    width: 420px; /* fallback — real width is bound to data.canvas.width */
+    width: 100%; /* fallback — real width is bound to data.canvas.width */
     position: absolute;
-    top: calc(50% - 240px);
-    left: 50%;
-    transform: translateX(-50%);
+    top: auto;
+    left: auto;
+    transform: none;
 }
 
 #canvas {
