@@ -4,6 +4,10 @@
 
 Built with **Nuxt 4** (Vue 3 + Vite) and **Tailwind CSS v4**.
 
+## Play it
+
+https://vernonht.github.io/vue-car-racing/
+
 ## Requirements
 
 - Node.js **>= 22.19** (Nuxt 4 engine requirement)
