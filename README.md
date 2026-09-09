@@ -8,6 +8,25 @@ Built with **Nuxt 4** (Vue 3 + Vite) and **Tailwind CSS v4**.
 
 https://vernonht.github.io/vue-car-racing/
 
+## Game
+
+A small lane-dodging canvas game: steer your car past oncoming traffic — every frame survived scores a point, and a single collision ends the run (press **Start** / **Play again** to retry).
+
+**Settings** (top controls, adjustable between rounds):
+
+| Setting | Range | Effect |
+| --- | --- | --- |
+| Lanes | 3–8 (default 4) | Road width — the canvas grows/shrinks and your car re-centers |
+| Speed | 1–20 | How fast the road (and traffic) scrolls |
+
+**Controls:** `Enter` start · `←` / `→` steer (also the round ◀ ▶ buttons) · on-screen **+ / −** for speed and lanes.
+
+## Screen size
+
+Best experienced on **desktop / landscape** — the canvas grows with the lane count, from **320px wide (3 lanes)** up to **820px (8 lanes)**, so wide roads need a wide screen (default 4 lanes = 420px).
+
+Mobile works too (the round ◀ ▶ buttons are the touch controls) — aim for a viewport ≥ 420px, i.e. most phones in portrait fit 3–4 lanes; pick 5+ lanes on a tablet, desktop, or landscape.
+
 ## Requirements
 
 - Node.js **>= 22.19** (Nuxt 4 engine requirement)
