@@ -1,5 +1,5 @@
 <template>
-    <div class="box">
+    <div class="box" :style="{ width: data.canvas.width + 'px' }">
         <!-- speed controls -->
         <div class="flex items-center justify-between mb-2">
             <div class="flex items-center gap-1.5 rounded-xl bg-white border border-gray-200 px-2.5 py-1.5 shadow-sm">
@@ -10,17 +10,32 @@
                 <span id="speed" class="text-gray-900 text-sm font-bold tabular-nums leading-none">{{ currentSpeed }}</span>
             </div>
             <div class="flex gap-2">
-                <button class="ctrl" type="button" aria-label="Increase speed" title="Increase speed" @click="currentSpeed++">
+                <button class="ctrl" type="button" aria-label="Increase speed" title="Increase speed" @click="setCurrentSpeed(currentSpeed + 1)">
                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
                         <path d="M12 5v14M5 12h14" />
                     </svg>
                 </button>
-                <button class="ctrl" type="button" aria-label="Decrease speed" title="Decrease speed" @click="currentSpeed--">
+                <button class="ctrl" type="button" aria-label="Decrease speed" title="Decrease speed" @click="setCurrentSpeed(currentSpeed - 1)">
                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
                         <path d="M5 12h14" />
                     </svg>
                 </button>
             </div>
+        </div>
+
+        <!-- lane controls: 3-8 lanes, canvas width follows -->
+        <div class="flex items-center justify-center gap-2 my-2 select-none">
+            <button class="ctrl" type="button" :disabled="game || laneCount <= 3" aria-label="Remove lane" title="Remove lane (min 3)" @click="setLaneCount(laneCount - 1)">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14" /></svg>
+            </button>
+            <div class="flex items-center gap-1.5 rounded-xl bg-white border border-gray-200 px-3 py-1.5 shadow-sm">
+                <svg class="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" d="M6 5v14M12 5v14M18 5v14" /></svg>
+                <span class="text-gray-500 text-xs font-semibold uppercase tracking-wider">Lanes</span>
+                <span class="text-gray-900 text-sm font-bold tabular-nums leading-none">{{ laneCount }}</span>
+            </div>
+            <button class="ctrl" type="button" :disabled="game || laneCount >= 8" aria-label="Add lane" title="Add lane (max 8)" @click="setLaneCount(laneCount + 1)">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+            </button>
         </div>
 
         <div class="hidden">
@@ -102,6 +117,7 @@ function loadSprites () {
 
 // --- mutable game state --------------------------------------------------
 const currentSpeed = ref(10)
+const maxSpeed = ref(20)
 const game = ref(false)
 const muted = ref(false)
 const die = ref(false)
@@ -111,6 +127,7 @@ const score = ref(0)
 const lines = ref([])
 const car1 = ref([])
 const car2 = ref([])
+const laneCount = ref(4) // number of lanes (3-8); canvas width follows
 
 // Static game configuration / metrics (canvas size, sprites, lanes...)
 const data = reactive({
@@ -158,16 +175,56 @@ const data = reactive({
         width: 10,
         height: 80,
         distance: 120,
-        pos0: 15,
-        pos1: 115,
-        pos2: 215,
-        pos3: 315,
+        dashes: [], // x of dashed lane dividers; regenerated in applyLaneCount()
         color: "#efefef"
     },
-    moves: [30, 130, 230, 330],
+    moves: [], // lane centre x positions; regenerated in applyLaneCount()
     score: 1,
     grace: 10
 })
+
+// --- dynamic lanes ------------------------------------------------------
+// Lane pitch is fixed at 100px: lane i's centre sits at x = 30 + i*100 and the
+// dashed dividers run at x = 15 + i*100. The canvas width tracks the lane
+// count so the road always spans the full canvas: width = lanes*100 + 20
+// (4 lanes = 420px, 3 lanes = 320px, 8 lanes = 820px).
+const LANE = {
+    pitch: 100,
+    firstX: 30,
+    dashX: 15,
+    min: 3,
+    max: 8
+}
+
+function applyLaneCount (count) {
+    const n = Math.min(LANE.max, Math.max(LANE.min, count))
+    laneCount.value = n
+
+    const moves = []
+    const dashes = []
+    for (let i = 0; i < n; i++) {
+        moves.push(LANE.firstX + LANE.pitch * i)
+        dashes.push(LANE.dashX + LANE.pitch * i)
+    }
+
+    data.moves = moves
+    data.line.dashes = dashes
+    data.canvas.width = LANE.pitch * n + 20
+
+    // keep the player car parked on a lane that always exists (2nd from the left)
+    data.car1.position.x = moves[1]
+}
+
+function setLaneCount (count) {
+    if (game.value) return // do not resize mid-race
+    applyLaneCount(count)
+    // clear stale scenery so the next start() rebuilds it at the new width
+    lines.value = []
+    car2.value = []
+}
+
+// initial geometry: the classic 4-lane layout
+applyLaneCount(4)
 
 // DOM handles (assigned in onMounted; not reactive by design)
 let canvas = null
@@ -219,6 +276,10 @@ onBeforeUnmount(() => {
     }
 })
 
+function setCurrentSpeed (speed) {
+    currentSpeed.value = Math.max(1, Math.min(maxSpeed.value, speed))
+}
+
 function onKeydown(evt) {
     evt.preventDefault();
 
@@ -239,32 +300,18 @@ function onKeydown(evt) {
 }
 
 function left() {
-    if (car1.value[0] === data.moves[1]) {
-        car1Move.value = data.moves[0];
-        car1Turn.value = 1;
-    }
-    else if (car1.value[0] === data.moves[2]) {
-        car1Move.value = data.moves[1];
-        car1Turn.value = 1;
-    }
-    else if (car1.value[0] === data.moves[3]) {
-        car1Move.value = data.moves[2];
-        car1Turn.value = 1;
+    const idx = data.moves.indexOf(car1.value[0])
+    if (idx > 0) {
+        car1Move.value = data.moves[idx - 1]
+        car1Turn.value = 1
     }
 }
 
 function right() {
-    if (car1.value[0] === data.moves[0]) {
-        car1Move.value = data.moves[1];
-        car1Turn.value = 2;
-    }
-    else if (car1.value[0] === data.moves[1]) {
-        car1Move.value = data.moves[2];
-        car1Turn.value = 2;
-    }
-    else if (car1.value[0] === data.moves[2]) {
-        car1Move.value = data.moves[3];
-        car1Turn.value = 2;
+    const idx = data.moves.indexOf(car1.value[0])
+    if (idx >= 0 && idx < data.moves.length - 1) {
+        car1Move.value = data.moves[idx + 1]
+        car1Turn.value = 2
     }
 }
 
@@ -285,13 +332,9 @@ function initLines() {
     var y = data.canvas.height - data.line.height;
 
     while (y >= 0) {
-        lines.value.push([
-            [data.line.pos0, y, data.line.width, data.line.height],
-            [data.line.pos1, y, data.line.width, data.line.height],
-            [data.line.pos2, y, data.line.width, data.line.height],
-            [data.line.pos3, y, data.line.width, data.line.height]
-        ]);
-
+        lines.value.push(
+            data.line.dashes.map(x => [x, y, data.line.width, data.line.height])
+        );
         y -= data.line.distance;
     }
 }
@@ -302,7 +345,7 @@ function initCar1() {
 
 function initCar2() {
     for (var i = 0; i < Math.floor(Math.random() * 2) + 1; i++) {
-        var random = data.moves[Math.floor(Math.random() * 4)];
+        var random = data.moves[Math.floor(Math.random() * data.moves.length)];
 
         let min = Math.ceil(2);
         let max = Math.floor(5);
@@ -327,29 +370,26 @@ function drawLines() {
     context.fillStyle = data.line.color;
 
     for (var i = 0; i < lines.value.length; i++) {
-        context.fillRect(lines.value[i][0][0], lines.value[i][0][1], lines.value[i][0][2], lines.value[i][0][3]);
-        context.fillRect(lines.value[i][1][0], lines.value[i][1][1], lines.value[i][1][2], lines.value[i][1][3]);
-        context.fillRect(lines.value[i][2][0], lines.value[i][2][1], lines.value[i][2][2], lines.value[i][2][3]);
-        context.fillRect(lines.value[i][3][0], lines.value[i][3][1], lines.value[i][3][2], lines.value[i][3][3]);
+        var row = lines.value[i];
+        for (var j = 0; j < row.length; j++) {
+            context.fillRect(row[j][0], row[j][1], row[j][2], row[j][3]);
+        }
 
-        if (lines.value[i][0][1] > data.canvas.height) {
+        if (row[0][1] > data.canvas.height) {
             remove = i;
         }
         else {
-            lines.value[i][0][1] += currentSpeed.value;
-            lines.value[i][1][1] += currentSpeed.value;
-            lines.value[i][2][1] += currentSpeed.value;
-            lines.value[i][3][1] += currentSpeed.value;
+            for (var k = 0; k < row.length; k++) {
+                row[k][1] += currentSpeed.value;
+            }
         }
     }
 
-    if (lines.value[lines.value.length - 1][0][1] > data.line.distance - data.line.height) {
-        lines.value.push([
-            [data.line.pos0, (data.line.height * -1), data.line.width, data.line.height],
-            [data.line.pos1, (data.line.height * -1), data.line.width, data.line.height],
-            [data.line.pos2, (data.line.height * -1), data.line.width, data.line.height],
-            [data.line.pos3, (data.line.height * -1), data.line.width, data.line.height]
-        ]);
+    if (lines.value.length > 0 &&
+        lines.value[lines.value.length - 1][0][1] > data.line.distance - data.line.height) {
+        lines.value.push(
+            lines.value[lines.value.length - 1].map(dash => [dash[0], data.line.height * -1, dash[2], dash[3]])
+        );
     }
 
     if (remove) {
@@ -468,10 +508,11 @@ function initialize() {
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
-    width: 420px;
-position: absolute;
-top: calc(50% - 240px);
-left: calc(50% - 170px);
+    width: 420px; /* fallback — real width is bound to data.canvas.width */
+    position: absolute;
+    top: calc(50% - 240px);
+    left: 50%;
+    transform: translateX(-50%);
 }
 
 #canvas {
@@ -519,7 +560,7 @@ text-shadow: -2px 0 black, -2px 2px black, -2px -2px black, 0 2px black, 2px 0 b
 /* ---------- layout: wraps canvas + in-canvas overlays ---------- */
 .game-stage {
     position: relative;
-    width: 420px;
+    width: 100%; /* follows .box, which tracks data.canvas.width */
     height: 480px;
     margin: 0 auto;
 }
@@ -598,5 +639,17 @@ text-shadow: -2px 0 black, -2px 2px black, -2px -2px black, 0 2px black, 2px 0 b
 .gpad--start:active {
     transform: scale(0.95);
     background: #2d5c51;
+}
+
+.ctrl:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.ctrl:disabled:hover {
+    background: #fff;
+    border-color: #d1d5db;
 }
 </style>
