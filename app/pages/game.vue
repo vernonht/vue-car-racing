@@ -211,8 +211,8 @@ function applyLaneCount (count) {
     data.line.dashes = dashes
     data.canvas.width = LANE.pitch * n + 20
 
-    // keep the player car parked on a lane that always exists (2nd from the left)
-    data.car1.position.x = moves[1]
+    // park the player car on the centre lane
+    data.car1.position.x = moves[Math.floor((n - 1) / 2)]
 }
 
 function setLaneCount (count) {
