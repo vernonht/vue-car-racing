@@ -8,6 +8,9 @@ Built with **Nuxt 4** (Vue 3 + Vite) and **Tailwind CSS v4**.
 
 https://vernonht.github.io/vue-car-racing/
 
+- `/game` — Canvas 2D version
+- `/game-next` — PixiJS (WebGL/WebGPU) rebuild
+
 ## Game
 
 A small lane-dodging canvas game: steer your car past oncoming traffic — every frame survived scores a point, and a single collision ends the run (press **Start** / **Play again** to retry).
@@ -18,8 +21,11 @@ A small lane-dodging canvas game: steer your car past oncoming traffic — every
 | --- | --- | --- |
 | Lanes | 3–8 (default 4) | Road width — the canvas grows/shrinks and your car re-centers |
 | Speed | 1–20 | How fast the road (and traffic) scrolls |
+| Difficulty | Easy / Medium / Hard (default Medium) | Traffic density — cars per wave and how closely the waves are spaced |
 
 **Controls:** `Enter` start · `←` / `→` steer (also the round ◀ ▶ buttons) · on-screen **+ / −** for speed and lanes.
+
+The game ships in **two builds**: `game.vue` renders to a Canvas 2D context, `game-next.vue` is a PixiJS rebuild (sprites + ticker, WebGL/WebGPU). Both share the control shell and lane geometry.
 
 ## Screen size
 
@@ -63,7 +69,8 @@ app/
   app.vue          # root component (<NuxtPage />)
   assets/          # css + game images
   components/      # Logo.vue (auto-imported)
-  pages/           # index.vue, game.vue
+  pages/           # index.vue, game.vue, game-next.vue (PixiJS)
+  utils/           # lanes.js — shared lane geometry
 public/            # served verbatim (favicon.ico)
 ```
 
@@ -71,3 +78,4 @@ public/            # served verbatim (favicon.ico)
 
 - SPA mode (`ssr: false`) — all logic runs client-side, including the canvas game loop.
 - Tailwind CSS v4 is CSS-first: configured in `app/assets/css/main.css`, no `tailwind.config.js` needed.
+- The PixiJS build lazy-loads `pixi.js` client-side (`await import('pixi.js')` inside `onMounted`) so it never runs during `nuxt generate`; it needs WebGL/WebGPU and shows a fallback linking to `/game` when unavailable.
