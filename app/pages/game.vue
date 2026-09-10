@@ -88,6 +88,7 @@
 
 <script setup>
 import { reactive, ref, watch, onMounted, onBeforeUnmount } from 'vue'
+import { clampLaneCount, laneCentres, canvasWidth, centreLane, LANE } from '~/utils/lanes'
 import socargame03 from '@/assets/socargame-03.png'
 import socargame04 from '@/assets/socargame-04.png'
 import socargame05 from '@/assets/socargame-05.png'
@@ -184,27 +185,16 @@ const data = reactive({
     grace: 10
 })
 
-// --- dynamic lanes ------------------------------------------------------
-// Lane pitch is fixed at 100px: lane i's centre sits at x = 30 + i*100, the
-// dashed dividers run 15px to the left of each centre, and the canvas width
-// tracks the lane count so the road always spans the canvas: width = lanes*100
-// + 20 (4 lanes = 420px, 3 lanes = 320px, 8 lanes = 820px).
-const LANE = {
-    pitch: 100,
-    firstX: 30,
-    min: 3,
-    max: 8
-}
-
+// --- dynamic lanes (geometry shared with game-next.vue via ~/utils/lanes) ---
 function applyLaneCount (count) {
-    const n = Math.min(LANE.max, Math.max(LANE.min, count))
+    const n = clampLaneCount(count)
     laneCount.value = n
 
-    data.moves = Array.from({ length: n }, (_, i) => LANE.firstX + LANE.pitch * i)
-    data.canvas.width = LANE.pitch * n + 20
+    data.moves = laneCentres(n)
+    data.canvas.width = canvasWidth(n)
 
     // park the player car on the centre lane
-    data.car1.position.x = data.moves[Math.floor((n - 1) / 2)]
+    data.car1.position.x = data.moves[centreLane(n)]
 }
 
 function setLaneCount (count) {
@@ -323,7 +313,7 @@ function initLines() {
     while (y >= 0) {
         // dividers are just the lane centres, 15px to the left
         lines.value.push(
-            data.moves.map(x => [x - 15, y, data.line.width, data.line.height])
+            data.moves.map(x => [x - LANE.dashOffset, y, data.line.width, data.line.height])
         );
         y -= data.line.distance;
     }
