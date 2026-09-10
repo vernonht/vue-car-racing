@@ -28,6 +28,11 @@
             Play Game
           </div>
         </NuxtLink>
+        <NuxtLink to="/game-next">
+          <div class="button--grey">
+            Play (PixiJS)
+          </div>
+        </NuxtLink>
       </div>
     </div>
   </div>
