@@ -39,7 +39,7 @@
             <span class="text-gray-500 text-xs font-semibold uppercase tracking-wider">Difficulty</span>
             <div class="flex rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
                 <button
-                    v-for="d in DIFFICULTIES"
+                    v-for="d in Object.keys(SPAWN)"
                     :key="d"
                     class="seg capitalize"
                     type="button"
@@ -132,7 +132,6 @@ const SPAWN = {
     medium: { min: 1, max: 2, gap: 1 }, // matches the original game
     hard: { min: 2, max: 4, gap: 0.7 }
 }
-const DIFFICULTIES = ['easy', 'medium', 'hard']
 
 // --- state ---------------------------------------------------------------
 const stageEl = ref(null)
@@ -140,12 +139,12 @@ const scoreEl = ref(null)
 const instructionEl = ref(null)
 const loseEl = ref(null)
 
-const currentSpeed = ref(10)
+const currentSpeed = ref(5)
 const maxSpeed = ref(20)
 const game = ref(false)
 const muted = ref(false)
 const die = ref(false)
-const score = ref(0)
+let score = 0
 const laneCount = ref(4)
 const difficulty = ref('medium')
 const isMobile = ref(false)
@@ -296,7 +295,12 @@ function buildDashes () {
 function spawnEnemies () {
     const cfg = SPAWN[difficulty.value]
     const count = cfg.min + Math.floor(Math.random() * (cfg.max - cfg.min + 1))
-    for (const laneX of pickLanes(count)) {
+    const pool = data.moves.slice()
+    // distinct lanes, never every lane — the player always keeps a gap to slip
+    // through, even on Hard
+    const n = Math.min(count, pool.length - 1)
+    for (let i = 0; i < n; i++) {
+        const laneX = pool.splice(Math.floor(Math.random() * pool.length), 1)[0]
         const sprite = new PIXI.Sprite(enemyTextures[Math.floor(Math.random() * enemyTextures.length)])
         sprite.setSize(data.car2.width, data.car2.height)
         sprite.x = laneX
@@ -304,18 +308,6 @@ function spawnEnemies () {
         enemyLayer.addChild(sprite)
         enemies.push(sprite)
     }
-}
-
-// Pick `count` distinct lanes, never every lane — the player always keeps a gap
-// to slip through, even on Hard.
-function pickLanes (count) {
-    const pool = data.moves.slice()
-    const lanes = []
-    const n = Math.min(count, pool.length - 1)
-    for (let i = 0; i < n; i++) {
-        lanes.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0])
-    }
-    return lanes
 }
 
 function clearEnemies () {
@@ -328,7 +320,7 @@ function clearEnemies () {
 // --- game flow -----------------------------------------------------------
 function initialize () {
     die.value = false
-    score.value = 0
+    score = 0
     scoreEl.value.innerHTML = '0'
     laneTarget = null
     turnDir = 0
@@ -400,8 +392,8 @@ function tick (ticker) {
     }
 
     collision()
-    score.value += 1
-    scoreEl.value.innerHTML = score.value
+    score += 1
+    scoreEl.value.innerHTML = score
 }
 
 function left () {
