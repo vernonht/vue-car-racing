@@ -29,7 +29,7 @@
                 <span class="text-gray-500 text-xs font-semibold uppercase tracking-wider">Lanes</span>
                 <span class="text-gray-900 text-sm font-bold tabular-nums leading-none">{{ laneCount }}</span>
             </div>
-            <button class="ctrl" type="button" :disabled="game || laneCount >= 8" aria-label="Add lane" title="Add lane (max 8)" @click="setLaneCount(laneCount + 1)">
+            <button class="ctrl" type="button" :disabled="game || laneCount >= maxLanes" aria-label="Add lane" :title="`Add lane (max ${maxLanes})`" @click="setLaneCount(laneCount + 1)">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
             </button>
         </div>
@@ -39,7 +39,7 @@
             <span class="text-gray-500 text-xs font-semibold uppercase tracking-wider">Difficulty</span>
             <div class="flex rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
                 <button
-                    v-for="d in DIFFICULTIES"
+                    v-for="d in Object.keys(SPAWN)"
                     :key="d"
                     class="seg capitalize"
                     type="button"
@@ -58,13 +58,19 @@
         </div>
 
         <!-- PixiJS stage + in-canvas overlays (score / instructions / lose) -->
-        <div ref="stageEl" class="game-stage">
+        <div
+            ref="stageEl"
+            class="game-stage"
+            @touchstart.passive="onTouchStart"
+            @touchend="onTouchEnd"
+        >
             <pre ref="scoreEl" id="score">0</pre>
             <div ref="instructionEl" class="flex flex-col px-10" id="instruction">
                 <div>Press "Enter" key to start the game.</div>
                 <div>Controls:</div>
                 <div>"Left" Arrow key</div>
                 <div>"Right" Arrow key</div>
+                <div v-if="isMobile">Swipe left / right on touch screens</div>
             </div>
             <pre ref="loseEl" id="lose">You lose! Try again?</pre>
             <p v-if="webglError" class="render-error">
@@ -101,6 +107,7 @@
 <script setup>
 import { reactive, ref, watch, onMounted, onBeforeUnmount } from 'vue'
 import { clampLaneCount, laneCentres, canvasWidth, centreLane, LANE } from '~/utils/lanes'
+import { isTouchDevice, maxLanesForScreen } from '~/utils/device'
 import socargame01 from '@/assets/socargame-01.png'
 import socargame03 from '@/assets/socargame-03.png'
 import socargame04 from '@/assets/socargame-04.png'
@@ -125,7 +132,6 @@ const SPAWN = {
     medium: { min: 1, max: 2, gap: 1 }, // matches the original game
     hard: { min: 2, max: 4, gap: 0.7 }
 }
-const DIFFICULTIES = ['easy', 'medium', 'hard']
 
 // --- state ---------------------------------------------------------------
 const stageEl = ref(null)
@@ -133,14 +139,16 @@ const scoreEl = ref(null)
 const instructionEl = ref(null)
 const loseEl = ref(null)
 
-const currentSpeed = ref(10)
+const currentSpeed = ref(5)
 const maxSpeed = ref(20)
 const game = ref(false)
 const muted = ref(false)
 const die = ref(false)
-const score = ref(0)
+let score = 0
 const laneCount = ref(4)
 const difficulty = ref('medium')
+const isMobile = ref(false)
+const maxLanes = ref(LANE.max) // effective cap for this screen (see maxLanesForScreen)
 const webglError = ref(false)
 
 const data = reactive({
@@ -187,7 +195,7 @@ let turnDir = 0 // 0 idle, 1 left, 2 right
 
 // --- geometry ------------------------------------------------------------
 function applyLaneCount (count) {
-    const n = clampLaneCount(count)
+    const n = Math.min(maxLanes.value, clampLaneCount(count))
     laneCount.value = n
 
     data.moves = laneCentres(n)
@@ -211,6 +219,39 @@ function setLaneCount (count) {
 function setDifficulty (level) {
     if (game.value) return // pick difficulty between rounds
     difficulty.value = level
+}
+
+// --- mobile detection / touch input --------------------------------------
+function onResize () {
+    maxLanes.value = maxLanesForScreen(window.innerWidth)
+    if (!game.value && laneCount.value > maxLanes.value) {
+        applyLaneCount(maxLanes.value)
+    }
+}
+
+// swipe (touch) steering: horizontal swipe = lane change, tap = start/restart
+const SWIPE_THRESHOLD = 24
+let touchStart = null
+
+function onTouchStart (evt) {
+    const t = evt.changedTouches[0]
+    touchStart = { x: t.clientX, y: t.clientY }
+}
+
+function onTouchEnd (evt) {
+    if (!touchStart) return
+    const t = evt.changedTouches[0]
+    const dx = t.clientX - touchStart.x
+    const dy = t.clientY - touchStart.y
+    touchStart = null
+
+    if (Math.abs(dx) > SWIPE_THRESHOLD && Math.abs(dx) > Math.abs(dy)) {
+        if (dx < 0) left()
+        else right()
+    }
+    else if (Math.hypot(dx, dy) <= SWIPE_THRESHOLD && !game.value) {
+        start()
+    }
 }
 
 function setCurrentSpeed (speed) {
@@ -254,7 +295,12 @@ function buildDashes () {
 function spawnEnemies () {
     const cfg = SPAWN[difficulty.value]
     const count = cfg.min + Math.floor(Math.random() * (cfg.max - cfg.min + 1))
-    for (const laneX of pickLanes(count)) {
+    const pool = data.moves.slice()
+    // distinct lanes, never every lane — the player always keeps a gap to slip
+    // through, even on Hard
+    const n = Math.min(count, pool.length - 1)
+    for (let i = 0; i < n; i++) {
+        const laneX = pool.splice(Math.floor(Math.random() * pool.length), 1)[0]
         const sprite = new PIXI.Sprite(enemyTextures[Math.floor(Math.random() * enemyTextures.length)])
         sprite.setSize(data.car2.width, data.car2.height)
         sprite.x = laneX
@@ -262,18 +308,6 @@ function spawnEnemies () {
         enemyLayer.addChild(sprite)
         enemies.push(sprite)
     }
-}
-
-// Pick `count` distinct lanes, never every lane — the player always keeps a gap
-// to slip through, even on Hard.
-function pickLanes (count) {
-    const pool = data.moves.slice()
-    const lanes = []
-    const n = Math.min(count, pool.length - 1)
-    for (let i = 0; i < n; i++) {
-        lanes.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0])
-    }
-    return lanes
 }
 
 function clearEnemies () {
@@ -286,7 +320,7 @@ function clearEnemies () {
 // --- game flow -----------------------------------------------------------
 function initialize () {
     die.value = false
-    score.value = 0
+    score = 0
     scoreEl.value.innerHTML = '0'
     laneTarget = null
     turnDir = 0
@@ -358,8 +392,8 @@ function tick (ticker) {
     }
 
     collision()
-    score.value += 1
-    scoreEl.value.innerHTML = score.value
+    score += 1
+    scoreEl.value.innerHTML = score
 }
 
 function left () {
@@ -457,12 +491,18 @@ async function createPixiApp () {
 
 onMounted(async () => {
     muted.value = true
+    isMobile.value = isTouchDevice()
+    maxLanes.value = maxLanesForScreen(window.innerWidth)
+    // phones start on fewer lanes; always clamped to what fits the screen
+    applyLaneCount(Math.min(isMobile.value ? 3 : laneCount.value, maxLanes.value))
     window.addEventListener('keydown', onKeydown)
+    window.addEventListener('resize', onResize)
     await createPixiApp()
 })
 
 onBeforeUnmount(() => {
     window.removeEventListener('keydown', onKeydown)
+    window.removeEventListener('resize', onResize)
     if (app) {
         app.ticker.stop()
         app.destroy(true, { children: true })
@@ -504,6 +544,7 @@ applyLaneCount(4)
     width: 100%;
     height: 480px;
     margin: 0 auto;
+    touch-action: none; /* swipe steering must not scroll the page */
 }
 
 .game-stage canvas {
