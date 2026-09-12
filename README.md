@@ -33,6 +33,13 @@ Best experienced on **desktop / landscape** — the canvas grows with the lane c
 
 Mobile works too (the round ◀ ▶ buttons are the touch controls) — aim for a viewport ≥ 420px, i.e. most phones in portrait fit 3–4 lanes; pick 5+ lanes on a tablet, desktop, or landscape.
 
+## Credits & copyright
+
+- **Game** — inspired by [Takane Ichinose's CodePen](https://codepen.io/takaneichinose/pen/MjNpXb). Project code © Jian Hao.
+- **Soundtracks** — one of the tracks in `public/soundtracks/` plays (randomly chosen) during each run and stops on game over:
+  - `OSAKA.mp3`
+  - `Been Waiting.mp3`
+
 ## Requirements
 
 - Node.js **>= 22.19** (Nuxt 4 engine requirement)
@@ -68,10 +75,10 @@ nuxt.config.ts
 app/
   app.vue          # root component (<NuxtPage />)
   assets/          # css + game images
-  components/      # Logo.vue (auto-imported)
+  components/      # Logo.vue, SoundtrackPlayer.vue (auto-imported)
   pages/           # index.vue, game.vue, game-next.vue (PixiJS)
   utils/           # lanes.js — shared lane geometry
-public/            # served verbatim (favicon.ico)
+public/            # served verbatim (favicon.ico, soundtracks/)
 ```
 
 ## Notes
@@ -79,3 +86,4 @@ public/            # served verbatim (favicon.ico)
 - SPA mode (`ssr: false`) — all logic runs client-side, including the canvas game loop.
 - Tailwind CSS v4 is CSS-first: configured in `app/assets/css/main.css`, no `tailwind.config.js` needed.
 - The PixiJS build lazy-loads `pixi.js` client-side (`await import('pixi.js')` inside `onMounted`) so it never runs during `nuxt generate`; it needs WebGL/WebGPU and shows a fallback linking to `/game` when unavailable.
+- Soundtrack (`/game-next`) is handled by the reusable `SoundtrackPlayer` component (`:playing`, `:muted` props): it picks a random track from `public/soundtracks/` on each play and stops on game over.

@@ -50,13 +50,6 @@
             </div>
         </div>
 
-        <div class="hidden">
-            <audio controls autoplay loop id="audio">
-                <!-- <source src="../assets/bgm.mp3" type="audio/mpeg"> -->
-                Your browser does not support the audio element.
-            </audio>
-        </div>
-
         <!-- PixiJS stage + in-canvas overlays (score / instructions / lose) -->
         <div
             ref="stageEl"
@@ -96,6 +89,9 @@
         </div>
 
         <div class="flex flex-col justify-end">
+            <!-- soundtrack: a random track each play, stopped on game over -->
+            <SoundtrackPlayer :playing="game" :muted="muted" />
+
             <span class="text-right">Inspired by Takane Ichinose</span>
             <span class="text-right">
                 <a href="https://codepen.io/takaneichinose/pen/MjNpXb">https://codepen.io/takaneichinose/pen/MjNpXb</a>
@@ -105,7 +101,7 @@
 </template>
 
 <script setup>
-import { reactive, ref, watch, onMounted, onBeforeUnmount } from 'vue'
+import { reactive, ref, onMounted, onBeforeUnmount } from 'vue'
 import { clampLaneCount, laneCentres, canvasWidth, centreLane, LANE } from '~/utils/lanes'
 import { isTouchDevice, maxLanesForScreen } from '~/utils/device'
 import socargame01 from '@/assets/socargame-01.png'
@@ -507,18 +503,6 @@ onBeforeUnmount(() => {
         app.ticker.stop()
         app.destroy(true, { children: true })
         app = null
-    }
-})
-
-// audio mute (same behaviour as game.vue)
-watch(muted, (val) => {
-    const audio = document.getElementById('audio')
-    if (audio) {
-        audio.muted = val
-        if (val) {
-            audio.pause(); audio.currentTime = 0;
-        }
-        else audio.play();
     }
 })
 
