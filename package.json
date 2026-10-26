@@ -16,7 +16,7 @@
     "preview": "nuxt preview"
   },
   "dependencies": {
-    "nuxt": "^4.5.2",
+    "nuxt": "^4.6.2",
     "pixi.js": "^8.20.1"
   },
   "devDependencies": {
